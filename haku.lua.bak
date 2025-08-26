@@ -92,12 +92,8 @@ rejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 rejoinBtn.TextScaled = true
 rejoinBtn.Text = "🔄 Rejoin Server"
 
--- rejoinBtn.MouseButton1Click:Connect(function()
-    -- TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
--- end)
-
 rejoinBtn.MouseButton1Click:Connect(function()
-    TeleportService:Teleport(game.PlaceId, plr)
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
 end)
 
 local minimized = false
