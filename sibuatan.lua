@@ -13,7 +13,7 @@ end)
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "FinalTeleportGUI_Redesigned"
-ScreenGui.Parent = game.CoreGui
+ScreenGui.Parent = plr:WaitForChild("PlayerGui") -- <-- FIX: PlayerGui bukan CoreGui
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 320, 0, 480)
@@ -96,7 +96,7 @@ local CoordLabel = Instance.new("TextLabel")
 CoordLabel.Size = UDim2.new(1, 0, 0, 30)
 CoordLabel.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
 CoordLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
-CoordLabel.Font = Enum.Font.Code -- ganti dari Monospace ke Code
+CoordLabel.Font = Enum.Font.Code
 CoordLabel.TextSize = 16
 CoordLabel.Text = "X:0.0 Y:0.0 Z:0.0"
 CoordLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -178,9 +178,7 @@ CPDropdown.MouseButton1Click:Connect(function()
     CPList.Visible = not CPList.Visible
     local count = 0
     for _, c in ipairs(CPList:GetChildren()) do
-        if c:IsA("TextButton") then
-            count = count + 1
-        end
+        if c:IsA("TextButton") then count = count + 1 end
     end
     if CPList.Visible then
         CPList.Size = UDim2.new(1,0,0,count*30 + (count-1)*CPLayout.Padding.Offset + CPLayout.Padding.Offset*2)
@@ -279,8 +277,11 @@ local function refreshPlayers()
             BtnCorner.Parent = btn
 
             btn.MouseButton1Click:Connect(function()
-                if hrp and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                    hrp.CFrame = target.Character.HumanoidRootPart.CFrame
+                if hrp and target.Character then
+                    local targetHRP = target.Character:WaitForChild("HumanoidRootPart", 5)
+                    if targetHRP then
+                        hrp.CFrame = targetHRP.CFrame
+                    end
                 end
                 PlayerList.Visible = false
                 PlayerList.Size = UDim2.new(1,0,0,0)
