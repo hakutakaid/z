@@ -1,332 +1,192 @@
--- Services
-local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-
 local plr = Players.LocalPlayer
-local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") or plr.CharacterAdded:Wait():WaitForChild("HumanoidRootPart")
+local hrp
 
-plr.CharacterAdded:Connect(function(char)
+-- ✅ Function refresh HRP
+local function refreshHRP(char)
     hrp = char:WaitForChild("HumanoidRootPart")
-end)
+end
 
--- GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FinalTeleportGUI_Redesigned"
-ScreenGui.Parent = plr:WaitForChild("PlayerGui") -- <-- FIX: PlayerGui bukan CoreGui
+-- Ambil HRP pertama kali
+refreshHRP(plr.Character or plr.CharacterAdded:Wait())
+-- Update saat respawn
+plr.CharacterAdded:Connect(refreshHRP)
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 480)
-MainFrame.Position = UDim2.new(0.05, 0, 0.1, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(40, 44, 52)
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
-
-local FrameCorner = Instance.new("UICorner")
-FrameCorner.CornerRadius = UDim.new(0, 8)
-FrameCorner.Parent = MainFrame
-
--- Title Bar
-local TitleBar = Instance.new("TextLabel")
-TitleBar.Size = UDim2.new(1, 0, 0, 35)
-TitleBar.BackgroundColor3 = Color3.fromRGB(50, 55, 65)
-TitleBar.TextColor3 = Color3.fromRGB(220, 220, 220)
-TitleBar.Font = Enum.Font.GothamBold
-TitleBar.TextSize = 18
-TitleBar.Text = "🚀 Final Teleport GUI"
-TitleBar.TextWrapped = true
-TitleBar.Parent = MainFrame
-
--- Minimize Button
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -35, 0, 2)
-MinBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
-MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.TextSize = 20
-MinBtn.Text = "–"
-MinBtn.Parent = MainFrame
-
-local MinBtnCorner = Instance.new("UICorner")
-MinBtnCorner.CornerRadius = UDim.new(0, 6)
-MinBtnCorner.Parent = MinBtn
-
-local minimized = false
-MinBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    for _, child in ipairs(MainFrame:GetChildren()) do
-        if child ~= TitleBar and child ~= MinBtn and child ~= FrameCorner then
-            child.Visible = not minimized
-        end
-    end
-    if minimized then
-        MainFrame.Size = UDim2.new(0, 320, 0, 35)
-    else
-        MainFrame.Size = UDim2.new(0, 320, 0, 480)
+-- Auto-cek HRP tiap frame
+RunService.Heartbeat:Connect(function()
+    if not hrp or not hrp.Parent then
+        local char = plr.Character or plr.CharacterAdded:Wait()
+        hrp = char:WaitForChild("HumanoidRootPart")
     end
 end)
 
--- Scrolling Frame
-local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Size = UDim2.new(1, -10, 1, -45)
-ScrollFrame.Position = UDim2.new(0, 5, 0, 40)
-ScrollFrame.BackgroundTransparency = 1
-ScrollFrame.ScrollBarThickness = 6
-ScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-ScrollFrame.VerticalScrollBarInset = Enum.ScrollBarInset.Always
-ScrollFrame.Parent = MainFrame
+-- ✅ GUI
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "KoordinatCheckpoint"
 
-local UIList = Instance.new("UIListLayout")
-UIList.SortOrder = Enum.SortOrder.LayoutOrder
-UIList.Padding = UDim.new(0, 8)
-UIList.Parent = ScrollFrame
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 260, 0, 500)
+frame.Position = UDim2.new(0.05, 0, 0.05, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.Active = true
+frame.Draggable = true
 
-local UIPad = Instance.new("UIPadding")
-UIPad.PaddingTop = UDim.new(0, 5)
-UIPad.PaddingBottom = UDim.new(0, 5)
-UIPad.PaddingLeft = UDim.new(0, 5)
-UIPad.PaddingRight = UDim.new(0, 5)
-UIPad.Parent = ScrollFrame
+local minimizeBtn = Instance.new("TextButton", frame)
+minimizeBtn.Size = UDim2.new(1, 0, 0, 30)
+minimizeBtn.Position = UDim2.new(0, 0, 0, 0)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.TextScaled = true
+minimizeBtn.Text = "- Koordinat GUI -"
 
--- Coordinate Display
-local CoordLabel = Instance.new("TextLabel")
-CoordLabel.Size = UDim2.new(1, 0, 0, 30)
-CoordLabel.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
-CoordLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
-CoordLabel.Font = Enum.Font.Code
-CoordLabel.TextSize = 16
-CoordLabel.Text = "X:0.0 Y:0.0 Z:0.0"
-CoordLabel.TextXAlignment = Enum.TextXAlignment.Left
-CoordLabel.Parent = ScrollFrame
+local container = Instance.new("ScrollingFrame", frame)
+container.Size = UDim2.new(1, 0, 1, -30)
+container.Position = UDim2.new(0, 0, 0, 30)
+container.BackgroundTransparency = 1
+container.ScrollBarThickness = 6
+container.CanvasSize = UDim2.new(0, 0, 0, 800)
 
-local CoordPad = Instance.new("UIPadding")
-CoordPad.PaddingLeft = UDim.new(0, 10)
-CoordPad.Parent = CoordLabel
-
-local CoordCorner = Instance.new("UICorner")
-CoordCorner.CornerRadius = UDim.new(0, 6)
-CoordCorner.Parent = CoordLabel
+-- ✅ Koordinat Player
+local label = Instance.new("TextLabel", container)
+label.Size = UDim2.new(0, 240, 0, 40)
+label.Position = UDim2.new(0, 10, 0, 0)
+label.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+label.TextColor3 = Color3.fromRGB(0, 255, 0)
+label.TextScaled = true
+label.Font = Enum.Font.Code
+label.Text = "X: 0  Y: 0  Z: 0"
 
 RunService.RenderStepped:Connect(function()
-    if hrp and not minimized then
-        local p = hrp.Position
-        CoordLabel.Text = string.format("X: %.1f Y: %.1f Z: %.1f", p.X, p.Y, p.Z)
-    end
-end)
-
--- Copy Coord Button
-local CopyBtn = Instance.new("TextButton")
-CopyBtn.Size = UDim2.new(1, 0, 0, 35)
-CopyBtn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CopyBtn.Font = Enum.Font.GothamBold
-CopyBtn.TextSize = 16
-CopyBtn.Text = "📋 Copy Current Coordinates"
-CopyBtn.Parent = ScrollFrame
-
-local CopyBtnCorner = Instance.new("UICorner")
-CopyBtnCorner.CornerRadius = UDim.new(0, 6)
-CopyBtnCorner.Parent = CopyBtn
-
-CopyBtn.MouseButton1Click:Connect(function()
     if hrp then
-        setclipboard(string.format("%.1f, %.1f, %.1f", hrp.Position.X, hrp.Position.Y, hrp.Position.Z))
+        local pos = hrp.Position
+        label.Text = string.format("X: %.1f   Y: %.1f   Z: %.1f", pos.X, pos.Y, pos.Z)
     end
 end)
 
--- Checkpoints
+-- ✅ Copy angka saja
+local copyBtn = Instance.new("TextButton", container)
+copyBtn.Size = UDim2.new(0, 240, 0, 35)
+copyBtn.Position = UDim2.new(0, 10, 0, 45)
+copyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+copyBtn.TextScaled = true
+copyBtn.Text = "Copy Koordinat"
+
+copyBtn.MouseButton1Click:Connect(function()
+    if hrp then
+        local pos = hrp.Position
+        setclipboard(string.format("%.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z))
+    end
+end)
+
+-- ✅ Daftar checkpoint
 local checkpoints = {
-    {name = "Starting Area", pos = Vector3.new(0, 10, 0)},
-    {name = "Hidden Treasure", pos = Vector3.new(-345.5, 457.0, -223.6)},
-    {name = "Mountaintop View", pos = Vector3.new(-764.6, 996.6, -127.6)},
-    {name = "Ancient Ruins", pos = Vector3.new(-1657.7, 998.4, 259.5)},
-    {name = "Deep Cave Entrance", pos = Vector3.new(500, -200, 100)}
+    Vector3.new(-621.7, 251.7, -383.9),
+    Vector3.new(-1203.2, 263.1, -487.1),
+    Vector3.new(-1399.3, 579.8, -949.9),
+    Vector3.new(-1701.0, 818.0, -1400.0),
+    Vector3.new(-2815.3, 1631.9, -2436.9),
+    Vector3.new(-3102.4, 1694.7, -2561.0),
 }
 
-local CPDropdown = Instance.new("TextButton")
-CPDropdown.Size = UDim2.new(1, 0, 0, 35)
-CPDropdown.BackgroundColor3 = Color3.fromRGB(155, 89, 182)
-CPDropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
-CPDropdown.Font = Enum.Font.GothamBold
-CPDropdown.TextSize = 16
-CPDropdown.Text = "▼ Select Checkpoint"
-CPDropdown.Parent = ScrollFrame
-
-local CPDropdownCorner = Instance.new("UICorner")
-CPDropdownCorner.CornerRadius = UDim.new(0, 6)
-CPDropdownCorner.Parent = CPDropdown
-
-local CPList = Instance.new("Frame")
-CPList.Size = UDim2.new(1, 0, 0, 0)
-CPList.BackgroundColor3 = Color3.fromRGB(60, 40, 70)
-CPList.Visible = false
-CPList.Parent = ScrollFrame
-
-local CPListCorner = Instance.new("UICorner")
-CPListCorner.CornerRadius = UDim.new(0, 6)
-CPListCorner.Parent = CPList
-
-local CPLayout = Instance.new("UIListLayout")
-CPLayout.SortOrder = Enum.SortOrder.LayoutOrder
-CPLayout.Padding = UDim.new(0, 2)
-CPLayout.Parent = CPList
-
-CPDropdown.MouseButton1Click:Connect(function()
-    CPList.Visible = not CPList.Visible
-    local count = 0
-    for _, c in ipairs(CPList:GetChildren()) do
-        if c:IsA("TextButton") then count = count + 1 end
-    end
-    if CPList.Visible then
-        CPList.Size = UDim2.new(1,0,0,count*30 + (count-1)*CPLayout.Padding.Offset + CPLayout.Padding.Offset*2)
-        CPDropdown.Text = "▲ Select Checkpoint"
-    else
-        CPList.Size = UDim2.new(1,0,0,0)
-        CPDropdown.Text = "▼ Select Checkpoint"
-    end
-end)
-
-for i, cp in ipairs(checkpoints) do
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 28)
-    btn.BackgroundColor3 = Color3.fromRGB(120, 70, 150)
-    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 14
-    btn.Text = cp.name
-    btn.Parent = CPList
-
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 5)
-    BtnCorner.Parent = btn
+for i, pos in ipairs(checkpoints) do
+    local btn = Instance.new("TextButton", container)
+    btn.Size = UDim2.new(0, 240, 0, 35)
+    btn.Position = UDim2.new(0, 10, 0, 90 + (i * 40))
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 120)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    btn.Text = "Teleport " .. i
 
     btn.MouseButton1Click:Connect(function()
-        if hrp then hrp.CFrame = CFrame.new(cp.pos) end
-        CPList.Visible = false
-        CPList.Size = UDim2.new(1,0,0,0)
-        CPDropdown.Text = "▼ Select Checkpoint"
+        if hrp then
+            hrp.CFrame = CFrame.new(pos)
+        end
     end)
 end
 
--- Player Dropdown
-local PlayerDropdown = Instance.new("TextButton")
-PlayerDropdown.Size = UDim2.new(1,0,0,35)
-PlayerDropdown.BackgroundColor3 = Color3.fromRGB(46,204,113)
-PlayerDropdown.TextColor3 = Color3.fromRGB(255,255,255)
-PlayerDropdown.Font = Enum.Font.GothamBold
-PlayerDropdown.TextSize = 16
-PlayerDropdown.Text = "▼ Teleport to Player"
-PlayerDropdown.Parent = ScrollFrame
+-- ✅ Teleport ke Player
+local playerLabel = Instance.new("TextLabel", container)
+playerLabel.Size = UDim2.new(0, 240, 0, 25)
+playerLabel.Position = UDim2.new(0, 10, 0, 350)
+playerLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+playerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+playerLabel.TextScaled = true
+playerLabel.Text = "Teleport ke Player:"
 
-local PlayerDropdownCorner = Instance.new("UICorner")
-PlayerDropdownCorner.CornerRadius = UDim.new(0,6)
-PlayerDropdownCorner.Parent = PlayerDropdown
-
-local PlayerList = Instance.new("Frame")
-PlayerList.Size = UDim2.new(1,0,0,0)
-PlayerList.BackgroundColor3 = Color3.fromRGB(30,60,40)
-PlayerList.Visible = false
-PlayerList.Parent = ScrollFrame
-
-local PlayerListCorner = Instance.new("UICorner")
-PlayerListCorner.CornerRadius = UDim.new(0,6)
-PlayerListCorner.Parent = PlayerList
-
-local PlayerLayout = Instance.new("UIListLayout")
-PlayerLayout.SortOrder = Enum.SortOrder.LayoutOrder
-PlayerLayout.Padding = UDim.new(0,2)
-PlayerLayout.Parent = PlayerList
-
-PlayerDropdown.MouseButton1Click:Connect(function()
-    PlayerList.Visible = not PlayerList.Visible
-    local count = 0
-    for _, c in ipairs(PlayerList:GetChildren()) do
-        if c:IsA("TextButton") then count = count + 1 end
-    end
-    if PlayerList.Visible then
-        PlayerList.Size = UDim2.new(1,0,0,count*28 + (count-1)*PlayerLayout.Padding.Offset + PlayerLayout.Padding.Offset*2)
-        PlayerDropdown.Text = "▲ Teleport to Player"
-    else
-        PlayerList.Size = UDim2.new(1,0,0,0)
-        PlayerDropdown.Text = "▼ Teleport to Player"
-    end
-end)
-
-local function refreshPlayers()
-    for _, child in ipairs(PlayerList:GetChildren()) do
-        if child:IsA("TextButton") then
+local function updatePlayers()
+    -- Hapus tombol lama
+    for _, child in ipairs(container:GetChildren()) do
+        if child:IsA("TextButton") and child.Name:find("PlayerBtn") then
             child:Destroy()
         end
     end
+
+    local yOffset = 380
     for _, target in ipairs(Players:GetPlayers()) do
         if target ~= plr then
-            local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1,0,0,28)
-            btn.BackgroundColor3 = Color3.fromRGB(70,180,90)
-            btn.TextColor3 = Color3.fromRGB(220,220,220)
-            btn.Font = Enum.Font.Gotham
-            btn.TextSize = 14
+            local btn = Instance.new("TextButton", container)
+            btn.Name = "PlayerBtn_" .. target.Name
+            btn.Size = UDim2.new(0, 240, 0, 30)
+            btn.Position = UDim2.new(0, 10, 0, yOffset)
+            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextScaled = true
             btn.Text = target.Name
-            btn.Parent = PlayerList
-
-            local BtnCorner = Instance.new("UICorner")
-            BtnCorner.CornerRadius = UDim.new(0,5)
-            BtnCorner.Parent = btn
 
             btn.MouseButton1Click:Connect(function()
-                if hrp and target.Character then
-                    local targetHRP = target.Character:WaitForChild("HumanoidRootPart", 5)
-                    if targetHRP then
-                        hrp.CFrame = targetHRP.CFrame
-                    end
+                if hrp and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    hrp.CFrame = target.Character.HumanoidRootPart.CFrame
                 end
-                PlayerList.Visible = false
-                PlayerList.Size = UDim2.new(1,0,0,0)
-                PlayerDropdown.Text = "▼ Teleport to Player"
             end)
+            yOffset = yOffset + 35
         end
     end
+    container.CanvasSize = UDim2.new(0, 0, 0, yOffset + 20)
 end
 
-Players.PlayerAdded:Connect(refreshPlayers)
-Players.PlayerRemoving:Connect(refreshPlayers)
-refreshPlayers()
+Players.PlayerAdded:Connect(updatePlayers)
+Players.PlayerRemoving:Connect(updatePlayers)
+updatePlayers()
 
--- Actions
-local RejoinBtn = Instance.new("TextButton")
-RejoinBtn.Size = UDim2.new(1,0,0,35)
-RejoinBtn.BackgroundColor3 = Color3.fromRGB(241,196,15)
-RejoinBtn.TextColor3 = Color3.fromRGB(40,44,52)
-RejoinBtn.Font = Enum.Font.GothamBold
-RejoinBtn.TextSize = 16
-RejoinBtn.Text = "🔄 Rejoin Server"
-RejoinBtn.Parent = ScrollFrame
+-- ✅ Rejoin & Restart
+local rejoinBtn = Instance.new("TextButton", container)
+rejoinBtn.Size = UDim2.new(0, 240, 0, 40)
+rejoinBtn.Position = UDim2.new(0, 10, 0, 800)
+rejoinBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 50)
+rejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+rejoinBtn.TextScaled = true
+rejoinBtn.Text = "🔄 Rejoin Server"
 
-local RejoinBtnCorner = Instance.new("UICorner")
-RejoinBtnCorner.CornerRadius = UDim.new(0,6)
-RejoinBtnCorner.Parent = RejoinBtn
-
-RejoinBtn.MouseButton1Click:Connect(function()
+rejoinBtn.MouseButton1Click:Connect(function()
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
 end)
 
-local RestartBtn = Instance.new("TextButton")
-RestartBtn.Size = UDim2.new(1,0,0,35)
-RestartBtn.BackgroundColor3 = Color3.fromRGB(231,76,60)
-RestartBtn.TextColor3 = Color3.fromRGB(255,255,255)
-RestartBtn.Font = Enum.Font.GothamBold
-RestartBtn.TextSize = 16
-RestartBtn.Text = "⚡ Restart Script"
-RestartBtn.Parent = ScrollFrame
+local restartBtn = Instance.new("TextButton", container)
+restartBtn.Size = UDim2.new(0, 240, 0, 40)
+restartBtn.Position = UDim2.new(0, 10, 0, 850)
+restartBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 50)
+restartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+restartBtn.TextScaled = true
+restartBtn.Text = "🔁 Restart Script"
 
-local RestartBtnCorner = Instance.new("UICorner")
-RestartBtnCorner.CornerRadius = UDim.new(0,6)
-RestartBtnCorner.Parent = RestartBtn
+restartBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/daun.lua"))()
+end)
 
-RestartBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/sibuatan.lua"))()
+-- ✅ Minimize
+local minimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    container.Visible = not minimized
+    if minimized then
+        frame.Size = UDim2.new(0, 260, 0, 30)
+        minimizeBtn.Text = "+ Koordinat GUI -"
+    else
+        frame.Size = UDim2.new(0, 260, 0, 500)
+        minimizeBtn.Text = "- Koordinat GUI -"
+    end
 end)
