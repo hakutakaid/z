@@ -338,7 +338,7 @@ local function createGUI()
 
     RestartBtn.MouseButton1Click:Connect(function()
         ScreenGui:Destroy()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/sibuatan.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/daun.lua"))()
     end)
 end
 
