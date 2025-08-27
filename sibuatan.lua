@@ -153,12 +153,15 @@ PlayerDropdown.TextColor3 = Color3.fromRGB(255,255,255)
 PlayerDropdown.TextScaled = true
 PlayerDropdown.Text = "Select Player"
 
-local PlayerList = Instance.new("ScrollingFrame", Scroll)
+local PlayerList = Instance.new("Frame", Frame) -- pindah ke Frame utama
 PlayerList.Size = UDim2.new(1,0,0,0)
-PlayerList.Position = UDim2.new(0,0,0,0)
+PlayerList.Position = UDim2.new(0,0,0,200) -- posisi bawah PlayerDropdown
 PlayerList.BackgroundColor3 = Color3.fromRGB(30,30,60)
-PlayerList.ScrollBarThickness = 6
 PlayerList.Visible = false
+
+local PlayerLayout = Instance.new("UIListLayout", PlayerList)
+PlayerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+PlayerLayout.Padding = UDim.new(0,2)
 
 PlayerDropdown.MouseButton1Click:Connect(function()
     PlayerList.Visible = not PlayerList.Visible
@@ -166,14 +169,14 @@ end)
 
 local function refreshPlayers()
     for _, child in ipairs(PlayerList:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
     end
-    local yPos = 0
     for _, target in ipairs(Players:GetPlayers()) do
         if target ~= plr then
             local btn = Instance.new("TextButton", PlayerList)
             btn.Size = UDim2.new(1,0,0,25)
-            btn.Position = UDim2.new(0,0,0,yPos)
             btn.BackgroundColor3 = Color3.fromRGB(50,50,100)
             btn.TextColor3 = Color3.fromRGB(255,255,255)
             btn.TextScaled = true
@@ -184,10 +187,9 @@ local function refreshPlayers()
                 end
                 PlayerList.Visible = false
             end)
-            yPos = yPos + 25
         end
     end
-    PlayerList.CanvasSize = UDim2.new(0,0,yPos,0)
+    PlayerList.Size = UDim2.new(1,0,0,#PlayerList:GetChildren()*27) -- update tinggi
 end
 
 Players.PlayerAdded:Connect(refreshPlayers)
