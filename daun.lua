@@ -7,17 +7,9 @@ local plr = Players.LocalPlayer
 local hrp
 
 -- Function untuk setup HRP
-local function setupHRP()
-    if plr.Character then
-        hrp = plr.Character:WaitForChild("HumanoidRootPart")
-    end
-end
-
-plr.CharacterAdded:Connect(function(char)
+local function setupHRP(char)
     hrp = char:WaitForChild("HumanoidRootPart")
-end)
-
-setupHRP()
+end
 
 -- Function untuk buat GUI
 local function createGUI()
@@ -342,5 +334,16 @@ local function createGUI()
     end)
 end
 
--- Jalankan GUI
-createGUI()
+-- Function untuk setup Character baru
+local function onCharacterAdded(char)
+    setupHRP(char)
+    createGUI()
+end
+
+-- Jalankan untuk karakter pertama
+if plr.Character then
+    onCharacterAdded(plr.Character)
+end
+
+-- Detect respawn
+plr.CharacterAdded:Connect(onCharacterAdded)
