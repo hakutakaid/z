@@ -105,30 +105,18 @@ CPDropdown.TextScaled = true
 CPDropdown.Text = "Select Checkpoint"
 
 local CPList = Instance.new("Frame", Scroll)
-CPList.Size = UDim2.new(1,0,0,#checkpoints*30)
+CPList.Size = UDim2.new(1,0,0,0)
 CPList.Position = UDim2.new(0,0,0,0)
 CPList.BackgroundColor3 = Color3.fromRGB(50,30,30)
 CPList.Visible = false
 
--- Animate dropdown
-local function toggleDropdown(drop, list)
-    if list.Visible then
-        for i = 1, 10 do
-            list.Size = UDim2.new(1,0,0,#checkpoints*3*i/10)
-            wait(0.01)
-        end
-        list.Visible = false
-    else
-        list.Visible = true
-        for i = 1, 10 do
-            list.Size = UDim2.new(1,0,0,#checkpoints*3*i/10)
-            wait(0.01)
-        end
-    end
-end
+local CPLayout = Instance.new("UIListLayout", CPList)
+CPLayout.SortOrder = Enum.SortOrder.LayoutOrder
+CPLayout.Padding = UDim.new(0,2)
 
 CPDropdown.MouseButton1Click:Connect(function()
     CPList.Visible = not CPList.Visible
+    CPList.Size = if CPList.Visible then UDim2.new(1,0,0, #checkpoints*32) else UDim2.new(1,0,0,0)
 end)
 
 for i, cp in ipairs(checkpoints) do
@@ -142,6 +130,7 @@ for i, cp in ipairs(checkpoints) do
     btn.MouseButton1Click:Connect(function()
         if hrp then hrp.CFrame = CFrame.new(cp.pos) end
         CPList.Visible = false
+        CPList.Size = UDim2.new(1,0,0,0)
     end)
 end
 
@@ -153,9 +142,10 @@ PlayerDropdown.TextColor3 = Color3.fromRGB(255,255,255)
 PlayerDropdown.TextScaled = true
 PlayerDropdown.Text = "Select Player"
 
-local PlayerList = Instance.new("Frame", Frame) -- pindah ke Frame utama
+-- THIS IS THE LINE THAT WAS CHANGED
+local PlayerList = Instance.new("Frame", Scroll) 
 PlayerList.Size = UDim2.new(1,0,0,0)
-PlayerList.Position = UDim2.new(0,0,0,200) -- posisi bawah PlayerDropdown
+PlayerList.Position = UDim2.new(0,0,0,0)
 PlayerList.BackgroundColor3 = Color3.fromRGB(30,30,60)
 PlayerList.Visible = false
 
@@ -165,6 +155,7 @@ PlayerLayout.Padding = UDim.new(0,2)
 
 PlayerDropdown.MouseButton1Click:Connect(function()
     PlayerList.Visible = not PlayerList.Visible
+    PlayerList.Size = if PlayerList.Visible then UDim2.new(1,0,0, #Players:GetPlayers()*27) else UDim2.new(1,0,0,0)
 end)
 
 local function refreshPlayers()
@@ -186,14 +177,14 @@ local function refreshPlayers()
                     hrp.CFrame = target.Character.HumanoidRootPart.CFrame
                 end
                 PlayerList.Visible = false
+                PlayerList.Size = UDim2.new(1,0,0,0)
             end)
         end
     end
-    PlayerList.Size = UDim2.new(1,0,0,#PlayerList:GetChildren()*27) -- update tinggi
 end
 
-Players.PlayerAdded:Connect(refreshPlayers)
-Players.PlayerRemoving:Connect(refreshPlayers)
+Players.PlayerAdded:Connect(function(player) refreshPlayers() end)
+Players.PlayerRemoving:Connect(function(player) refreshPlayers() end)
 refreshPlayers()
 
 -- Actions
@@ -217,3 +208,4 @@ RestartBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/sibuatan.lua"))()
 end)
+
