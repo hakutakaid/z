@@ -9,12 +9,9 @@ local function refreshHRP(char)
     hrp = char:WaitForChild("HumanoidRootPart")
 end
 
--- Ambil HRP pertama kali
 refreshHRP(plr.Character or plr.CharacterAdded:Wait())
--- Update saat respawn
 plr.CharacterAdded:Connect(refreshHRP)
 
--- Auto-cek HRP tiap frame
 RunService.Heartbeat:Connect(function()
     if not hrp or not hrp.Parent then
         local char = plr.Character or plr.CharacterAdded:Wait()
@@ -65,7 +62,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ✅ Copy angka saja
+-- ✅ Copy Koordinat
 local copyBtn = Instance.new("TextButton", container)
 copyBtn.Size = UDim2.new(0, 240, 0, 35)
 copyBtn.Position = UDim2.new(0, 10, 0, 45)
@@ -81,19 +78,51 @@ copyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ✅ Daftar checkpoint
+-- ✅ Fungsi Toggle Menu
+local function createToggleMenu(parent, title)
+    local mainBtn = Instance.new("TextButton", parent)
+    mainBtn.Size = UDim2.new(0, 240, 0, 35)
+    mainBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    mainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    mainBtn.TextScaled = true
+    mainBtn.Text = title
+
+    local menuFrame = Instance.new("Frame", parent)
+    menuFrame.Size = UDim2.new(0, 240, 0, 0)
+    menuFrame.Position = UDim2.new(0, 0, 0, 0)
+    menuFrame.BackgroundTransparency = 1
+    menuFrame.ClipsDescendants = true
+
+    local expanded = false
+    mainBtn.MouseButton1Click:Connect(function()
+        expanded = not expanded
+        if expanded then
+            menuFrame.Size = UDim2.new(0, 240, 0, menuFrame:GetChildrenCount()*40)
+        else
+            menuFrame.Size = UDim2.new(0, 240, 0, 0)
+        end
+        container.CanvasSize = UDim2.new(0,0,0,frame.Size.Y.Offset + menuFrame.AbsoluteSize.Y + 200)
+    end)
+
+    return menuFrame
+end
+
+-- ✅ Checkpoints
+local checkpointMenu = createToggleMenu(container, "Checkpoints")
 local checkpoints = {
-    Vector3.new(-345.5, 457.0, -223.6)
+    Vector3.new(-345.5, 457.0, -223.6),
+    Vector3.new(-764.6, 996.6, -127.6),
+    Vector3.new(-1657.7, 998.4, 259.5)
 }
 
 for i, pos in ipairs(checkpoints) do
-    local btn = Instance.new("TextButton", container)
-    btn.Size = UDim2.new(0, 240, 0, 35)
-    btn.Position = UDim2.new(0, 10, 0, 90 + (i * 40))
+    local btn = Instance.new("TextButton", checkpointMenu)
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.Position = UDim2.new(0, 0, 0, (i-1)*40)
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 120)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextScaled = true
-    btn.Text = "Teleport " .. i
+    btn.Text = "Teleport Checkpoint " .. i
 
     btn.MouseButton1Click:Connect(function()
         if hrp then
@@ -102,30 +131,22 @@ for i, pos in ipairs(checkpoints) do
     end)
 end
 
--- ✅ Teleport ke Player
-local playerLabel = Instance.new("TextLabel", container)
-playerLabel.Size = UDim2.new(0, 240, 0, 25)
-playerLabel.Position = UDim2.new(0, 10, 0, 350)
-playerLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-playerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-playerLabel.TextScaled = true
-playerLabel.Text = "Teleport ke Player:"
+-- ✅ Teleport Player
+local playerMenu = createToggleMenu(container, "Teleport Player")
 
 local function updatePlayers()
-    -- Hapus tombol lama
-    for _, child in ipairs(container:GetChildren()) do
-        if child:IsA("TextButton") and child.Name:find("PlayerBtn") then
+    for _, child in ipairs(playerMenu:GetChildren()) do
+        if child:IsA("TextButton") then
             child:Destroy()
         end
     end
 
-    local yOffset = 380
+    local yOffset = 0
     for _, target in ipairs(Players:GetPlayers()) do
         if target ~= plr then
-            local btn = Instance.new("TextButton", container)
-            btn.Name = "PlayerBtn_" .. target.Name
-            btn.Size = UDim2.new(0, 240, 0, 30)
-            btn.Position = UDim2.new(0, 10, 0, yOffset)
+            local btn = Instance.new("TextButton", playerMenu)
+            btn.Size = UDim2.new(1, 0, 0, 30)
+            btn.Position = UDim2.new(0, 0, 0, yOffset)
             btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
             btn.TextScaled = true
@@ -139,7 +160,8 @@ local function updatePlayers()
             yOffset = yOffset + 35
         end
     end
-    container.CanvasSize = UDim2.new(0, 0, 0, yOffset + 20)
+    playerMenu.Size = UDim2.new(0, 240, 0, yOffset)
+    container.CanvasSize = UDim2.new(0,0,0,playerMenu.AbsolutePosition.Y + playerMenu.AbsoluteSize.Y + 50)
 end
 
 Players.PlayerAdded:Connect(updatePlayers)
@@ -149,7 +171,7 @@ updatePlayers()
 -- ✅ Rejoin & Restart
 local rejoinBtn = Instance.new("TextButton", container)
 rejoinBtn.Size = UDim2.new(0, 240, 0, 40)
-rejoinBtn.Position = UDim2.new(0, 10, 0, 800)
+rejoinBtn.Position = UDim2.new(0, 10, 0, 900)
 rejoinBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 50)
 rejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 rejoinBtn.TextScaled = true
@@ -161,7 +183,7 @@ end)
 
 local restartBtn = Instance.new("TextButton", container)
 restartBtn.Size = UDim2.new(0, 240, 0, 40)
-restartBtn.Position = UDim2.new(0, 10, 0, 850)
+restartBtn.Position = UDim2.new(0, 10, 0, 950)
 restartBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 50)
 restartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 restartBtn.TextScaled = true
