@@ -134,6 +134,52 @@ restartBtn.MouseButton1Click:Connect(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/sumbing.lua"))() 
 end)
 
+-- ✅ Auto Run Checkpoints (Stop di 5)
+local autoRun = false
+
+local autoRunBtn = Instance.new("TextButton", container)
+autoRunBtn.Size = UDim2.new(0, 200, 0, 40)
+autoRunBtn.Position = UDim2.new(0, 10, 0, 470)
+autoRunBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
+autoRunBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoRunBtn.TextScaled = true
+autoRunBtn.Text = "▶ Auto Run"
+
+autoRunBtn.MouseButton1Click:Connect(function()
+    if autoRun then return end -- biar nggak dobel
+    autoRun = true
+    autoRunBtn.Text = "⏳ Running..."
+    
+    task.spawn(function()
+        for i = 1, math.min(5, #checkpoints) do
+            if not autoRun then break end
+            if hrp and checkpoints[i] then
+                hrp.CFrame = CFrame.new(checkpoints[i])
+            end
+            task.wait(3) -- ⏱ delay 3 detik tiap teleport
+        end
+        autoRun = false
+        autoRunBtn.Text = "▶ Auto Run"
+    end)
+end)
+
+
+-- ✅ Respawn Button
+local respawnBtn = Instance.new("TextButton", container)
+respawnBtn.Size = UDim2.new(0, 200, 0, 40)
+respawnBtn.Position = UDim2.new(0, 10, 0, 520)
+respawnBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+respawnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+respawnBtn.TextScaled = true
+respawnBtn.Text = "❤️ Respawn"
+
+respawnBtn.MouseButton1Click:Connect(function()
+    local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.Health = 0 -- kill untuk respawn
+    end
+end)
+
 -- ✅ Minimize
 local minimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
