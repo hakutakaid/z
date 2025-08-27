@@ -330,4 +330,3 @@ RestartBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/sibuatan.lua"))()
 end)
-
