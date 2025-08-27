@@ -133,10 +133,12 @@ end
 -- Rejoin
 local RejoinBtn = makeButton(Container, "🔄 Rejoin Server", 370, 40)
 RejoinBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 50)
+-- RejoinBtn.MouseButton1Click:Connect(function()
+    -- TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
+-- end)
 RejoinBtn.MouseButton1Click:Connect(function()
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
+    TeleportService:Teleport(game.PlaceId, plr)
 end)
-
 -- Restart Script (load ulang dari raw milikmu)
 local RestartBtn = makeButton(Container, "🔁 Restart Script", 420, 40)
 RestartBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 50)
