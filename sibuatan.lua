@@ -1,5 +1,5 @@
 -- Load Kavo UI
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/SkazaDev/Kavo-UI-Library/main/source.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/refs/heads/main/source.lua"))()
 local Window = Library.CreateLib("My Script GUI", "DarkTheme") -- Tema: DarkTheme / LightTheme
 
 -- Ambil service
