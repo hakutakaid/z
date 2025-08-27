@@ -12,15 +12,8 @@ local function setupHRP(char)
     hrp = char:WaitForChild("HumanoidRootPart")
 end
 
--- Smooth dropdown function
-local function toggleDropdown(frame, open, openSize)
-    local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(frame, tweenInfo, {Size = open and UDim2.new(1,0,0,openSize) or UDim2.new(1,0,0,0)})
-    tween:Play()
-end
-
 -- Create button helper
-local function makeButton(parent, text, color)
+local function makeButton(parent, text, color, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1,0,0,35)
     btn.BackgroundColor3 = color
@@ -31,7 +24,69 @@ local function makeButton(parent, text, color)
     btn.Parent = parent
     local corner = Instance.new("UICorner", btn)
     corner.CornerRadius = UDim.new(0,6)
+    if callback then
+        btn.MouseButton1Click:Connect(callback)
+    end
     return btn
+end
+
+-- Helper buat dropdown item
+local function makeDropdownItem(parent, text, color, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1,0,0,30)
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 14
+    btn.Text = text
+    btn.Parent = parent
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0,5)
+    if callback then
+        btn.MouseButton1Click:Connect(callback)
+    end
+    return btn
+end
+
+-- Fungsi dropdown
+local function createDropdown(parent, titleText, items)
+    local container = Instance.new("Frame", parent)
+    container.Size = UDim2.new(1,0,0,35)
+    container.BackgroundTransparency = 1
+
+    local mainBtn = Instance.new("TextButton", container)
+    mainBtn.Size = UDim2.new(1,0,0,35)
+    mainBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
+    mainBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    mainBtn.Font = Enum.Font.GothamBold
+    mainBtn.TextSize = 16
+    mainBtn.Text = "▼ "..titleText
+    local mainCorner = Instance.new("UICorner", mainBtn)
+    mainCorner.CornerRadius = UDim.new(0,6)
+
+    local listFrame = Instance.new("Frame", container)
+    listFrame.Size = UDim2.new(1,0,0,0)
+    listFrame.Position = UDim2.new(0,0,0,35)
+    listFrame.BackgroundColor3 = Color3.fromRGB(60,60,70)
+    listFrame.ClipsDescendants = true
+
+    local layout = Instance.new("UIListLayout", listFrame)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0,2)
+
+    local open = false
+    mainBtn.MouseButton1Click:Connect(function()
+        open = not open
+        local targetSize = open and UDim2.new(1,0,0,#items*32) or UDim2.new(1,0,0,0)
+        TweenService:Create(listFrame,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=targetSize}):Play()
+    end)
+
+    -- Tambah item
+    for _,item in ipairs(items) do
+        makeDropdownItem(listFrame,item.name,item.color,item.callback)
+    end
+
+    return container
 end
 
 -- Main GUI creation
@@ -115,8 +170,7 @@ local function createGUI()
     end)
 
     -- Copy Coord Button
-    local copyBtn = makeButton(scroll,"📋 Copy Coordinates",Color3.fromRGB(52,152,219))
-    copyBtn.MouseButton1Click:Connect(function()
+    makeButton(scroll,"📋 Copy Coordinates",Color3.fromRGB(52,152,219),function()
         if hrp then setclipboard(string.format("%.1f, %.1f, %.1f", hrp.Position.X,hrp.Position.Y,hrp.Position.Z)) end
     end)
 
@@ -126,84 +180,64 @@ local function createGUI()
         {name="CP2", pos=Vector3.new(-1203.2,263.1,-487.1)},
         {name="CP3", pos=Vector3.new(-1399.3,579.8,-949.9)},
     }
-    local cpBtn = makeButton(scroll,"▼ Select Checkpoint",Color3.fromRGB(155,89,182))
-    local cpList = Instance.new("Frame",scroll)
-    cpList.Size = UDim2.new(1,0,0,0)
-    cpList.BackgroundColor3 = Color3.fromRGB(60,40,70)
-    cpList.Visible = false
-    local cpLayout = Instance.new("UIListLayout",cpList)
-    cpLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    cpLayout.Padding = UDim.new(0,2)
-    local cpCorner = Instance.new("UICorner",cpList)
-    cpCorner.CornerRadius = UDim.new(0,6)
 
-    cpBtn.MouseButton1Click:Connect(function()
-        local open = not cpList.Visible
-        cpList.Visible = true
-        toggleDropdown(cpList,open,#checkpoints*35)
-    end)
-
+    local cpItems = {}
     for _,cp in ipairs(checkpoints) do
-        local btn = makeButton(cpList,cp.name,Color3.fromRGB(120,70,150))
-        btn.MouseButton1Click:Connect(function()
-            if hrp then hrp.CFrame = CFrame.new(cp.pos) end
-            toggleDropdown(cpList,false,0)
-        end)
+        table.insert(cpItems,{
+            name = cp.name,
+            color = Color3.fromRGB(120,70,150),
+            callback = function()
+                if hrp then hrp.CFrame = CFrame.new(cp.pos) end
+            end
+        })
     end
+    createDropdown(scroll,"Select Checkpoint",cpItems)
 
-    -- Player Teleport
-    local playerBtn = makeButton(scroll,"▼ Teleport to Player",Color3.fromRGB(46,204,113))
-    local playerList = Instance.new("Frame",scroll)
-    playerList.Size = UDim2.new(1,0,0,0)
-    playerList.BackgroundColor3 = Color3.fromRGB(30,60,40)
-    playerList.Visible = false
-    local playerLayout = Instance.new("UIListLayout",playerList)
-    playerLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    playerLayout.Padding = UDim.new(0,2)
-    local playerCorner = Instance.new("UICorner",playerList)
-    playerCorner.CornerRadius = UDim.new(0,6)
-
-    local function refreshPlayers()
-        for _,c in ipairs(playerList:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+    -- Teleport ke Player
+    local function refreshPlayersDropdownItems()
+        local t = {}
         for _,target in ipairs(Players:GetPlayers()) do
             if target ~= plr then
-                local btn = makeButton(playerList,target.Name,Color3.fromRGB(70,180,90))
-                btn.MouseButton1Click:Connect(function()
-                    if hrp and target.Character then
-                        local tHRP = target.Character:FindFirstChild("HumanoidRootPart")
-                        if tHRP then hrp.CFrame = tHRP.CFrame end
+                table.insert(t,{
+                    name = target.Name,
+                    color = Color3.fromRGB(70,180,90),
+                    callback = function()
+                        if hrp and target.Character then
+                            local tHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                            if tHRP then hrp.CFrame = tHRP.CFrame end
+                        end
                     end
-                    toggleDropdown(playerList,false,0)
-                end)
+                })
             end
         end
+        return t
     end
-    Players.PlayerAdded:Connect(refreshPlayers)
-    Players.PlayerRemoving:Connect(refreshPlayers)
-    refreshPlayers()
 
-    playerBtn.MouseButton1Click:Connect(function()
-        local open = not playerList.Visible
-        playerList.Visible = true
-        toggleDropdown(playerList,open,#Players:GetPlayers()*35)
+    local playerDropdown = createDropdown(scroll,"Teleport Player",refreshPlayersDropdownItems())
+
+    Players.PlayerAdded:Connect(function()
+        playerDropdown:Destroy()
+        playerDropdown = createDropdown(scroll,"Teleport Player",refreshPlayersDropdownItems())
+    end)
+
+    Players.PlayerRemoving:Connect(function()
+        playerDropdown:Destroy()
+        playerDropdown = createDropdown(scroll,"Teleport Player",refreshPlayersDropdownItems())
     end)
 
     -- Actions Buttons
-    local rejoinBtn = makeButton(scroll,"🔄 Rejoin Server",Color3.fromRGB(241,196,15))
-    rejoinBtn.MouseButton1Click:Connect(function()
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
-    end)
-    local restartBtn = makeButton(scroll,"⚡ Restart Script",Color3.fromRGB(231,76,60))
-    restartBtn.MouseButton1Click:Connect(function()
-        gui:Destroy()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/daun.lua"))()
-    end)
-
-    -- ✅ Respawn Button
-    local respawnBtn = makeButton(scroll,"❤️ Respawn",Color3.fromRGB(200,50,50))
-    respawnBtn.MouseButton1Click:Connect(function()
+    makeButton(scroll,"❤️ Respawn",Color3.fromRGB(200,50,50),function()
         local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.Health = 0 end
+    end)
+
+    makeButton(scroll,"🔄 Rejoin Server",Color3.fromRGB(241,196,15),function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
+    end)
+
+    makeButton(scroll,"⚡ Restart Script",Color3.fromRGB(231,76,60),function()
+        gui:Destroy()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/daun.lua"))()
     end)
 end
 
