@@ -13,7 +13,7 @@ end)
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "FinalTeleportGUI_Redesigned"
-ScreenGui.Parent = plr.PlayerGui
+ScreenGui.Parent = plr.PlayerGui -- <-- INI BARIS YANG SUDAH DIPERBAIKI
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 320, 0, 480)
@@ -327,8 +327,7 @@ local RestartBtnCorner = Instance.new("UICorner")
 RestartBtnCorner.CornerRadius = UDim.new(0,6)
 RestartBtnCorner.Parent = RestartBtn
 
--- Hapus baris ScreenGui:Destroy() karena skrip akan di-reset saat respawn secara otomatis.
 RestartBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/sibuatan.lua"))()
 end)
-
