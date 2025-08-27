@@ -1,22 +1,22 @@
-local TeleportService = game:GetService("TeleportService")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+-- Koordinat/Checkpoint GUI (refactor dengan UICorner + drag via title bar)
 
+--// Services
+local TeleportService = game:GetService("TeleportService")
+local Players         = game:GetService("Players")
+local RunService      = game:GetService("RunService")
+local UserInputService= game:GetService("UserInputService")
+
+--// Player/Character
 local plr = Players.LocalPlayer
 local hrp
 
--- ✅ Function refresh HRP
 local function refreshHRP(char)
     hrp = char:WaitForChild("HumanoidRootPart")
 end
 
--- Ambil HRP pertama kali
 refreshHRP(plr.Character or plr.CharacterAdded:Wait())
--- Update saat respawn
 plr.CharacterAdded:Connect(refreshHRP)
 
--- Auto-cek HRP tiap frame
 RunService.Heartbeat:Connect(function()
     if not hrp or not hrp.Parent then
         local char = plr.Character or plr.CharacterAdded:Wait()
@@ -24,106 +24,94 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ✅ GUI
-local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "KoordinatCheckpoint"
+--// GUI Instances
+local ScreenGui   = Instance.new("ScreenGui")
+ScreenGui.Name    = "KoordinatCheckpoint"
+ScreenGui.Parent  = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn   = false
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 230, 0, 470)
-frame.Position = UDim2.new(0.05, 0, 0.05, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.Active = true -- penting biar drag jalan
+local Frame       = Instance.new("Frame")
+Frame.Parent      = ScreenGui
+Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Frame.Position    = UDim2.new(0.05, 0, 0.05, 0)
+Frame.Size        = UDim2.new(0, 230, 0, 470)
+Frame.Active      = true
 
--- ========== SISTEM DRAG ==========
-local dragging, dragInput, dragStart, startPos
+local FrameCorner = Instance.new("UICorner")
+FrameCorner.CornerRadius = UDim.new(0, 12)
+FrameCorner.Parent = Frame
 
-local function update(input)
-	local delta = input.Position - dragStart
-	frame.Position = UDim2.new(
-		startPos.X.Scale,
-		startPos.X.Offset + delta.X,
-		startPos.Y.Scale,
-		startPos.Y.Offset + delta.Y
-	)
+-- Title bar (dipakai drag + tombol minimize)
+local TitleBar    = Instance.new("TextButton")
+TitleBar.Name     = "TitleBar"
+TitleBar.Parent   = Frame
+TitleBar.Size     = UDim2.new(1, 0, 0, 30)
+TitleBar.Position = UDim2.new(0, 0, 0, 0)
+TitleBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleBar.TextScaled = true
+TitleBar.AutoButtonColor = false
+TitleBar.Text     = "- SUMBING -"
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 12)
+TitleCorner.Parent = TitleBar
+
+-- Container isi
+local Container   = Instance.new("ScrollingFrame")
+Container.Parent  = Frame
+Container.Size    = UDim2.new(1, 0, 1, -30)
+Container.Position= UDim2.new(0, 0, 0, 30)
+Container.BackgroundTransparency = 1
+Container.ScrollBarThickness = 6
+Container.CanvasSize = UDim2.new(0, 0, 0, 800)
+
+-- Helper: bikin tombol rounded
+local function makeButton(parent, text, posY, height)
+    local btn = Instance.new("TextButton")
+    btn.Parent = parent
+    btn.Size   = UDim2.new(0, 200, 0, height or 35)
+    btn.Position = UDim2.new(0, 10, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 120)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    btn.Text = text
+    local c = Instance.new("UICorner", btn)
+    c.CornerRadius = UDim.new(0, 8)
+    return btn
 end
 
-frame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or 
-	   input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = frame.Position
-
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
-end)
-
-frame.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or 
-	   input.UserInputType == Enum.UserInputType.Touch then
-		dragInput = input
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		update(input)
-	end
-end)
--- ========== END DRAG ==========
-
-local minimizeBtn = Instance.new("TextButton", frame)
-minimizeBtn.Size = UDim2.new(1, 0, 0, 30)
-minimizeBtn.Position = UDim2.new(0, 0, 0, 0)
-minimizeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-minimizeBtn.TextScaled = true
-minimizeBtn.Text = "- SUMBING -"
-
-local container = Instance.new("ScrollingFrame", frame)
-container.Size = UDim2.new(1, 0, 1, -30)
-container.Position = UDim2.new(0, 0, 0, 30)
-container.BackgroundTransparency = 1
-container.ScrollBarThickness = 6
-container.CanvasSize = UDim2.new(0, 0, 0, 800)
-
-local label = Instance.new("TextLabel", container)
-label.Size = UDim2.new(0, 200, 0, 40)
-label.Position = UDim2.new(0, 10, 0, 0)
-label.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-label.TextColor3 = Color3.fromRGB(0, 255, 0)
-label.TextScaled = true
-label.Font = Enum.Font.Code
-label.Text = "X: 0  Y: 0  Z: 0"
+-- Label koordinat
+local CoordLabel = Instance.new("TextLabel")
+CoordLabel.Parent = Container
+CoordLabel.Size   = UDim2.new(0, 200, 0, 40)
+CoordLabel.Position = UDim2.new(0, 10, 0, 0)
+CoordLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+CoordLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+CoordLabel.TextScaled = true
+CoordLabel.Font = Enum.Font.Code
+CoordLabel.Text = "X: 0  Y: 0  Z: 0"
+Instance.new("UICorner", CoordLabel).CornerRadius = UDim.new(0, 8)
 
 RunService.RenderStepped:Connect(function()
     if hrp then
-        local pos = hrp.Position
-        label.Text = string.format("X: %.1f   Y: %.1f   Z: %.1f", pos.X, pos.Y, pos.Z)
+        local p = hrp.Position
+        CoordLabel.Text = string.format("X: %.1f   Y: %.1f   Z: %.1f", p.X, p.Y, p.Z)
     end
 end)
 
--- ✅ Copy angka saja
-local copyBtn = Instance.new("TextButton", container)
-copyBtn.Size = UDim2.new(0, 200, 0, 35)
-copyBtn.Position = UDim2.new(0, 10, 0, 45)
-copyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-copyBtn.TextScaled = true
-copyBtn.Text = "Copy Koordinat"
-
-copyBtn.MouseButton1Click:Connect(function()
+-- Copy koordinat
+local CopyBtn = makeButton(Container, "Copy Koordinat", 45)
+CopyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+CopyBtn.MouseButton1Click:Connect(function()
     if hrp then
-        local pos = hrp.Position
-        setclipboard(string.format("%.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z))
+        local p = hrp.Position
+        setclipboard(string.format("%.1f, %.1f, %.1f", p.X, p.Y, p.Z))
     end
 end)
 
--- daftar checkpoint
+-- Checkpoints
 local checkpoints = {
     [1] = Vector3.new(-225.5, 442.6, 2142.4),
     [2] = Vector3.new(-427.7, 850.6, 3204.2),
@@ -133,14 +121,7 @@ local checkpoints = {
 }
 
 for i = 1, 5 do
-    local btn = Instance.new("TextButton", container)
-    btn.Size = UDim2.new(0, 200, 0, 35)
-    btn.Position = UDim2.new(0, 10, 0, 90 + (i * 40))
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 120)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextScaled = true
-    btn.Text = "Teleport " .. i
-
+    local btn = makeButton(Container, "Teleport "..i, 90 + (i * 40))
     btn.MouseButton1Click:Connect(function()
         local pos = checkpoints[i]
         if pos and hrp then
@@ -149,89 +130,101 @@ for i = 1, 5 do
     end)
 end
 
--- ✅ Tombol Rejoin Server
-local rejoinBtn = Instance.new("TextButton", container)
-rejoinBtn.Size = UDim2.new(0, 200, 0, 40)
-rejoinBtn.Position = UDim2.new(0, 10, 0, 370)
-rejoinBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 50)
-rejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-rejoinBtn.TextScaled = true
-rejoinBtn.Text = "🔄 Rejoin Server"
-
-rejoinBtn.MouseButton1Click:Connect(function()
+-- Rejoin
+local RejoinBtn = makeButton(Container, "🔄 Rejoin Server", 370, 40)
+RejoinBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 50)
+RejoinBtn.MouseButton1Click:Connect(function()
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
 end)
 
--- ✅ Restart Script
-local restartBtn = Instance.new("TextButton", container)
-restartBtn.Size = UDim2.new(0, 200, 0, 40)
-restartBtn.Position = UDim2.new(0, 10, 0, 420)
-restartBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 50)
-restartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-restartBtn.TextScaled = true
-restartBtn.Text = "🔁 Restart Script"
-
-restartBtn.MouseButton1Click:Connect(function()
-    gui:Destroy() -- hapus GUI lama biar nggak dobel
-    -- ⬇ ganti link ini dengan link raw pastebin / github tempat scriptmu disimpan
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/sumbing.lua"))() 
+-- Restart Script (load ulang dari raw milikmu)
+local RestartBtn = makeButton(Container, "🔁 Restart Script", 420, 40)
+RestartBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 50)
+RestartBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy() -- bersihkan GUI lama
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/sumbing.lua"))()
 end)
 
--- ✅ Auto Run Checkpoints (Stop di 5)
+-- Auto Run CP 1→5 (delay 3s), auto stop di 5
 local autoRun = false
+local AutoRunBtn = makeButton(Container, "▶ Auto Run", 470, 40)
+AutoRunBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
 
-local autoRunBtn = Instance.new("TextButton", container)
-autoRunBtn.Size = UDim2.new(0, 200, 0, 40)
-autoRunBtn.Position = UDim2.new(0, 10, 0, 470)
-autoRunBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
-autoRunBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-autoRunBtn.TextScaled = true
-autoRunBtn.Text = "▶ Auto Run"
-
-autoRunBtn.MouseButton1Click:Connect(function()
-    if autoRun then return end -- biar nggak dobel
+AutoRunBtn.MouseButton1Click:Connect(function()
+    if autoRun then return end
     autoRun = true
-    autoRunBtn.Text = "⏳ Running..."
-    
+    AutoRunBtn.Text = "⏳ Running..."
     task.spawn(function()
         for i = 1, math.min(5, #checkpoints) do
             if not autoRun then break end
             if hrp and checkpoints[i] then
                 hrp.CFrame = CFrame.new(checkpoints[i])
             end
-            task.wait(3) -- ⏱ delay 3 detik tiap teleport
+            task.wait(3)
         end
         autoRun = false
-        autoRunBtn.Text = "▶ Auto Run"
+        AutoRunBtn.Text = "▶ Auto Run"
     end)
 end)
 
--- ✅ Respawn Button
-local respawnBtn = Instance.new("TextButton", container)
-respawnBtn.Size = UDim2.new(0, 200, 0, 40)
-respawnBtn.Position = UDim2.new(0, 10, 0, 520)
-respawnBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-respawnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-respawnBtn.TextScaled = true
-respawnBtn.Text = "❤️ Respawn"
-
-respawnBtn.MouseButton1Click:Connect(function()
-    local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.Health = 0 -- kill untuk respawn
-    end
+-- Respawn
+local RespawnBtn = makeButton(Container, "❤️ Respawn", 520, 40)
+RespawnBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+RespawnBtn.MouseButton1Click:Connect(function()
+    local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+    if hum then hum.Health = 0 end
 end)
 
--- ✅ Minimize
+-- Minimize toggle (konten disembunyikan, title tetap)
 local minimized = false
-minimizeBtn.MouseButton1Click:Connect(function()
+TitleBar.MouseButton1Click:Connect(function()
+    -- klik = toggle minimize (double fungsi: title untuk drag juga)
     minimized = not minimized
-    container.Visible = not minimized
+    Container.Visible = not minimized
     if minimized then
-        frame.Size = UDim2.new(0, 230, 0, 30)
-        minimizeBtn.Text = "+ SUMBING -"
+        Frame.Size = UDim2.new(0, 230, 0, 30)
+        TitleBar.Text = "+ SUMBING -"
     else
-        frame.Size = UDim2.new(0, 230, 0, 470)
-        minimizeBtn.Text = "- SUMBING -"
+        Frame.Size = UDim2.new(0, 230, 0, 470)
+        TitleBar.Text = "- SUMBING -"
     end
 end)
+
+-- DRAG via TitleBar (bukan seluruh frame)
+do
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        Frame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = Frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    TitleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
