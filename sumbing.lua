@@ -82,7 +82,7 @@ minimizeBtn.Position = UDim2.new(0, 0, 0, 0)
 minimizeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimizeBtn.TextScaled = true
-minimizeBtn.Text = "- Koordinat GUI -"
+minimizeBtn.Text = "- SUMBING -"
 
 local container = Instance.new("ScrollingFrame", frame)
 container.Size = UDim2.new(1, 0, 1, -30)
@@ -229,9 +229,9 @@ minimizeBtn.MouseButton1Click:Connect(function()
     container.Visible = not minimized
     if minimized then
         frame.Size = UDim2.new(0, 230, 0, 30)
-        minimizeBtn.Text = "+ Koordinat GUI -"
+        minimizeBtn.Text = "+ SUMBING -"
     else
         frame.Size = UDim2.new(0, 230, 0, 470)
-        minimizeBtn.Text = "- Koordinat GUI -"
+        minimizeBtn.Text = "- SUMBING -"
     end
 end)
