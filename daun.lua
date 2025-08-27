@@ -138,8 +138,9 @@ local function createGUI()
     cpCorner.CornerRadius = UDim.new(0,6)
 
     cpBtn.MouseButton1Click:Connect(function()
+        local open = not cpList.Visible
         cpList.Visible = true
-        toggleDropdown(cpList,not cpList.Visible,#checkpoints*35)
+        toggleDropdown(cpList,open,#checkpoints*35)
     end)
 
     for _,cp in ipairs(checkpoints) do
@@ -198,7 +199,7 @@ local function createGUI()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/daun.lua"))()
     end)
 
-    -- Respawn Button
+    -- ✅ Respawn Button
     local respawnBtn = makeButton(scroll,"❤️ Respawn",Color3.fromRGB(200,50,50))
     respawnBtn.MouseButton1Click:Connect(function()
         local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
