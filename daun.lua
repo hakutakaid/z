@@ -48,9 +48,9 @@ local function makeDropdownItem(parent, text, color, callback)
     return btn
 end
 
--- Fungsi dropdown
-local function createDropdown(parent, titleText, items)
-    local container = Instance.new("Frame", parent)
+-- Fungsi dropdown modern: anak langsung ScreenGui
+local function createDropdown(gui, parentFrame, titleText, items)
+    local container = Instance.new("Frame", parentFrame)
     container.Size = UDim2.new(1,0,0,35)
     container.BackgroundTransparency = 1
 
@@ -64,11 +64,13 @@ local function createDropdown(parent, titleText, items)
     local mainCorner = Instance.new("UICorner", mainBtn)
     mainCorner.CornerRadius = UDim.new(0,6)
 
-    local listFrame = Instance.new("Frame", container)
-    listFrame.Size = UDim2.new(1,0,0,0)
-    listFrame.Position = UDim2.new(0,0,0,35)
+    -- Dropdown frame langsung di ScreenGui supaya bebas clipping
+    local listFrame = Instance.new("Frame", gui)
+    listFrame.Size = UDim2.new(0, mainBtn.AbsoluteSize.X, 0, 0)
+    listFrame.Position = mainBtn.AbsolutePosition + Vector2.new(0, mainBtn.AbsoluteSize.Y)
     listFrame.BackgroundColor3 = Color3.fromRGB(60,60,70)
-    listFrame.ClipsDescendants = true
+    listFrame.ClipsDescendants = false
+    listFrame.ZIndex = 10
 
     local layout = Instance.new("UIListLayout", listFrame)
     layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -77,16 +79,17 @@ local function createDropdown(parent, titleText, items)
     local open = false
     mainBtn.MouseButton1Click:Connect(function()
         open = not open
-        local targetSize = open and UDim2.new(1,0,0,#items*32) or UDim2.new(1,0,0,0)
+        -- Update posisi dropdown sesuai tombol (jika window digeser)
+        listFrame.Position = mainBtn.AbsolutePosition + Vector2.new(0, mainBtn.AbsoluteSize.Y)
+        local targetSize = open and UDim2.new(0, mainBtn.AbsoluteSize.X, 0, #items*32) or UDim2.new(0, mainBtn.AbsoluteSize.X, 0, 0)
         TweenService:Create(listFrame,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=targetSize}):Play()
     end)
 
-    -- Tambah item
     for _,item in ipairs(items) do
         makeDropdownItem(listFrame,item.name,item.color,item.callback)
     end
 
-    return container
+    return container, listFrame
 end
 
 -- Main GUI creation
@@ -179,8 +182,10 @@ local function createGUI()
         {name="CP1", pos=Vector3.new(-621.7,251.7,-383.9)},
         {name="CP2", pos=Vector3.new(-1203.2,263.1,-487.1)},
         {name="CP3", pos=Vector3.new(-1399.3,579.8,-949.9)},
+        {name="CP4", pos=Vector3.new(-1701.0, 818.0, -1400.0)},
+        {name="CP5", pos=Vector3.new(-2815.3, 1631.9, -2436.9)},
+        {name="CP6", pos=Vector3.new(-3102.4, 1694.7, -2561.0)},
     }
-
     local cpItems = {}
     for _,cp in ipairs(checkpoints) do
         table.insert(cpItems,{
@@ -191,9 +196,9 @@ local function createGUI()
             end
         })
     end
-    createDropdown(scroll,"Select Checkpoint",cpItems)
+    createDropdown(gui, scroll, "Select Checkpoint", cpItems)
 
-    -- Teleport ke Player
+    -- Teleport Player
     local function refreshPlayersDropdownItems()
         local t = {}
         for _,target in ipairs(Players:GetPlayers()) do
@@ -213,28 +218,25 @@ local function createGUI()
         return t
     end
 
-    local playerDropdown = createDropdown(scroll,"Teleport Player",refreshPlayersDropdownItems())
+    local playerDropdown = createDropdown(gui, scroll, "Teleport Player", refreshPlayersDropdownItems())
 
     Players.PlayerAdded:Connect(function()
         playerDropdown:Destroy()
-        playerDropdown = createDropdown(scroll,"Teleport Player",refreshPlayersDropdownItems())
+        playerDropdown = createDropdown(gui, scroll, "Teleport Player", refreshPlayersDropdownItems())
     end)
-
     Players.PlayerRemoving:Connect(function()
         playerDropdown:Destroy()
-        playerDropdown = createDropdown(scroll,"Teleport Player",refreshPlayersDropdownItems())
+        playerDropdown = createDropdown(gui, scroll, "Teleport Player", refreshPlayersDropdownItems())
     end)
 
-    -- Actions Buttons
+    -- Action Buttons
     makeButton(scroll,"❤️ Respawn",Color3.fromRGB(200,50,50),function()
         local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.Health = 0 end
     end)
-
     makeButton(scroll,"🔄 Rejoin Server",Color3.fromRGB(241,196,15),function()
         TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
     end)
-
     makeButton(scroll,"⚡ Restart Script",Color3.fromRGB(231,76,60),function()
         gui:Destroy()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/daun.lua"))()
