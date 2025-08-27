@@ -1,13 +1,33 @@
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local plr = Players.LocalPlayer
-local hrp = plr.Character:WaitForChild("HumanoidRootPart")
+local hrp
 
+-- ✅ Function refresh HRP
+local function refreshHRP(char)
+    hrp = char:WaitForChild("HumanoidRootPart")
+end
+
+-- Ambil HRP pertama kali
+refreshHRP(plr.Character or plr.CharacterAdded:Wait())
+-- Update saat respawn
+plr.CharacterAdded:Connect(refreshHRP)
+
+-- Auto-cek HRP tiap frame
+RunService.Heartbeat:Connect(function()
+    if not hrp or not hrp.Parent then
+        local char = plr.Character or plr.CharacterAdded:Wait()
+        hrp = char:WaitForChild("HumanoidRootPart")
+    end
+end)
+
+-- ✅ GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "KoordinatCheckpoint"
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 230, 0, 430)
+frame.Size = UDim2.new(0, 230, 0, 470)
 frame.Position = UDim2.new(0.05, 0, 0.05, 0)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.Active = true
@@ -26,7 +46,7 @@ container.Size = UDim2.new(1, 0, 1, -30)
 container.Position = UDim2.new(0, 0, 0, 30)
 container.BackgroundTransparency = 1
 container.ScrollBarThickness = 6
-container.CanvasSize = UDim2.new(0, 0, 0, 700)
+container.CanvasSize = UDim2.new(0, 0, 0, 800)
 
 local label = Instance.new("TextLabel", container)
 label.Size = UDim2.new(0, 200, 0, 40)
@@ -37,9 +57,11 @@ label.TextScaled = true
 label.Font = Enum.Font.Code
 label.Text = "X: 0  Y: 0  Z: 0"
 
-game:GetService("RunService").RenderStepped:Connect(function()
-    local pos = hrp.Position
-    label.Text = string.format("X: %.1f   Y: %.1f   Z: %.1f", pos.X, pos.Y, pos.Z)
+RunService.RenderStepped:Connect(function()
+    if hrp then
+        local pos = hrp.Position
+        label.Text = string.format("X: %.1f   Y: %.1f   Z: %.1f", pos.X, pos.Y, pos.Z)
+    end
 end)
 
 -- ✅ Copy angka saja
@@ -52,8 +74,10 @@ copyBtn.TextScaled = true
 copyBtn.Text = "Copy Koordinat"
 
 copyBtn.MouseButton1Click:Connect(function()
-    local pos = hrp.Position
-    setclipboard(string.format("%.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z))
+    if hrp then
+        local pos = hrp.Position
+        setclipboard(string.format("%.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z))
+    end
 end)
 
 -- daftar checkpoint
@@ -62,12 +86,11 @@ local checkpoints = {
     [2] = Vector3.new(-1217.8, 264.5, -402.1),
     [3] = Vector3.new(-1518.3, 499.8, -788.6),
     [4] = Vector3.new(-1505.1, 828.6, -1493.0),
-    -- [5] = Vector3.new(-2655.4, 1236.8, -2027.1),
     [5] = Vector3.new(-2891.2, 1684.6, -2492.5),
     [6] = Vector3.new(-3103.4, 1699.3, -2562.3),
 }
 
-for i = 1, 5 do
+for i = 1, 6 do
     local btn = Instance.new("TextButton", container)
     btn.Size = UDim2.new(0, 200, 0, 35)
     btn.Position = UDim2.new(0, 10, 0, 90 + (i * 40))
@@ -78,7 +101,7 @@ for i = 1, 5 do
 
     btn.MouseButton1Click:Connect(function()
         local pos = checkpoints[i]
-        if pos then
+        if pos and hrp then
             hrp.CFrame = CFrame.new(pos)
         end
     end)
@@ -97,6 +120,22 @@ rejoinBtn.MouseButton1Click:Connect(function()
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
 end)
 
+-- ✅ Restart Script
+local restartBtn = Instance.new("TextButton", container)
+restartBtn.Size = UDim2.new(0, 200, 0, 40)
+restartBtn.Position = UDim2.new(0, 10, 0, 420)
+restartBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 50)
+restartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+restartBtn.TextScaled = true
+restartBtn.Text = "🔁 Restart Script"
+
+restartBtn.MouseButton1Click:Connect(function()
+    gui:Destroy() -- hapus GUI lama biar nggak dobel
+    -- ⬇ ganti link ini dengan link raw pastebin / github tempat scriptmu disimpan
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/daun.lua"))() 
+end)
+
+-- ✅ Minimize
 local minimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
@@ -105,7 +144,7 @@ minimizeBtn.MouseButton1Click:Connect(function()
         frame.Size = UDim2.new(0, 230, 0, 30)
         minimizeBtn.Text = "+ Koordinat GUI -"
     else
-        frame.Size = UDim2.new(0, 230, 0, 430)
+        frame.Size = UDim2.new(0, 230, 0, 470)
         minimizeBtn.Text = "- Koordinat GUI -"
     end
 end)
