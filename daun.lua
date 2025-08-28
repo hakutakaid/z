@@ -150,8 +150,8 @@ local function createGUI()
         {name = "Checkpoint 2", pos = Vector3.new(-1203.2, 263.1, -487.1)},
         {name = "Checkpoint 3", pos = Vector3.new(-1399.3, 579.8, -949.9)},
         {name = "Checkpoint 4", pos = Vector3.new(-1701.0, 818.0, -1400.0)},
-        {name = "Checkpoint 5", pos = Vector3.new(-2815.3, 1631.9, -2436.9)},
-        {name = "Checkpoint 6", pos = Vector3.new(-3102.4, 1694.7, -2561.0)},
+        {name = "Checkpoint 5", pos = Vector3.new(-3102.4, 1694.7, -2561.0)},
+        {name = "Checkpoint 6", pos = Vector3.new(-3195.7, 1726.8, -2617.0)},
     }
 
     local CPDropdown = Instance.new("TextButton")
@@ -350,6 +350,61 @@ local function createGUI()
         if plr.Character and plr.Character:FindFirstChild("Humanoid") then
             plr.Character.Humanoid.Health = 0
         end
+    end)
+-- Auto Teleport Button
+    local AutoBtn = Instance.new("TextButton")
+    AutoBtn.Size = UDim2.new(1,0,0,35)
+    AutoBtn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
+    AutoBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    AutoBtn.Font = Enum.Font.GothamBold
+    AutoBtn.TextSize = 16
+    AutoBtn.Text = "▶️ Start Auto Teleport"
+    AutoBtn.Parent = ScrollFrame
+
+    local AutoBtnCorner = Instance.new("UICorner")
+    AutoBtnCorner.CornerRadius = UDim.new(0,6)
+    AutoBtnCorner.Parent = AutoBtn
+
+    -- Daftar checkpoint + delay
+    local autoCheckpoints = {
+        {pos = Vector3.new(-621.7, 251.7, -383.9), delay = 30},       -- CP1 (30s)
+        {pos = Vector3.new(-1203.2, 263.1, -487.1), delay = 30},     -- CP2 (30s)
+        {pos = Vector3.new(-1399.3, 579.8, -949.9), delay = 60},     -- CP3 (60s)
+        {pos = Vector3.new(-1701.0, 818.0, -1400.0), delay = 100},   -- CP4 (100s)
+        {pos = Vector3.new(-3102.4, 1694.7, -2561.0), delay = 120},  -- CP5 (120s)
+        {pos = Vector3.new(-3195.7, 1726.8, -2617.0), delay = 0},    -- CP6 (finish)
+    }
+
+    -- Fungsi respawn
+    local function forceRespawn(callback)
+        if plr.Character and plr.Character:FindFirstChild("Humanoid") then
+            plr.Character:BreakJoints()
+            plr.CharacterAdded:Wait()
+            setupHRP(plr.Character)
+            if callback then callback() end
+        end
+    end
+
+    -- Fungsi auto teleport
+    local function autoTeleport()
+        task.spawn(function()
+            for i, cp in ipairs(autoCheckpoints) do
+                forceRespawn(function()
+                    if hrp then
+                        hrp.CFrame = CFrame.new(cp.pos)
+                        print("Teleported to CP"..i)
+                    end
+                end)
+                if cp.delay > 0 then
+                    task.wait(cp.delay)
+                end
+            end
+            print("✅ Auto Teleport selesai!")
+        end)
+    end
+
+    AutoBtn.MouseButton1Click:Connect(function()
+        autoTeleport()
     end)
 end
 
