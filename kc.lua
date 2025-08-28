@@ -153,7 +153,7 @@ local function createGUI()
         -- {name = "Checkpoint 5", pos = Vector3.new(4770.7, 1279.8, -269.6)},
         -- {name = "Checkpoint 6", pos = Vector3.new(5416.0, 1947.1, 911.8)},
         -- {name = "Checkpoint 6", pos = Vector3.new(5658.5, 1973.7, 439.9)},
-        {name = "Checkpoint 6", pos = Vector3.new(5437.2, 1820.1, 524.0)},
+        {name = "Checkpoint 6", pos = Vector3.new(5608.5, 1823.3, 447.3)},
     }
 
     local CPDropdown = Instance.new("TextButton")
