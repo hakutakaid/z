@@ -6,10 +6,10 @@ local hrp = plr.Character:WaitForChild("HumanoidRootPart")
 
 -- daftar checkpoints
 local checkpoints = {
-    Vector3.new(-205.2, 623.5, -563.5),
-    Vector3.new(2602.3, 948.4, -123.125),
-    Vector3.new(4334.8, 1232.6, 531.7),
-    Vector3.new(4760.6, 1280.4, -270.5),
+    -- Vector3.new(-205.2, 623.5, -563.5),
+    -- Vector3.new(2602.3, 948.4, -123.125),
+    -- Vector3.new(4334.8, 1232.6, 531.7),
+    -- Vector3.new(4760.6, 1280.4, -270.5),
     Vector3.new(5661.3, 1975.9, 440.5),
 }
 
