@@ -77,7 +77,7 @@ end)
 -- Checkpoints list (sama seperti mentahanmu)
 local checkpoints = {
     {name = "Kohana Volcano", pos = Vector3.new(-628.0, 55.8, 200.6)},
-    {name = "Checkpoint 2", pos = Vector3.new(-1203.2, 263.1, -487.1)},
+    {name = "Crater Island", pos = Vector3.new(952.7, 2.4, 4827.2)},
     {name = "Checkpoint 3", pos = Vector3.new(-1399.3, 579.8, -949.9)},
     {name = "Checkpoint 4", pos = Vector3.new(-1701.0, 818.0, -1400.0)},
     {name = "Checkpoint 5", pos = Vector3.new(-3102.4, 1694.7, -2561.0)},
@@ -234,7 +234,7 @@ local function createGUI()
     CPDropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
     CPDropdown.Font = Enum.Font.GothamBold
     CPDropdown.TextSize = 16
-    CPDropdown.Text = "▼ Select Checkpoint"
+    CPDropdown.Text = "▼ Select Place"
     CPDropdown.Parent = ScrollFrame
     Instance.new("UICorner", CPDropdown).CornerRadius = UDim.new(0,6)
 
