@@ -455,6 +455,32 @@ local function createGUI()
             plr.Character.Humanoid.Health = 0
         end
     end)
+    -- Radar Toggle Button
+    local RadarBtn = Instance.new("TextButton")
+    RadarBtn.Size = UDim2.new(1,0,0,35)
+    RadarBtn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
+    RadarBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    RadarBtn.Font = Enum.Font.GothamBold
+    RadarBtn.TextSize = 16
+    RadarBtn.Text = "👁️ Turn Radar ON"
+    RadarBtn.Parent = ScrollFrame
+    Instance.new("UICorner", RadarBtn).CornerRadius = UDim.new(0,6)
+    
+    local radarOn = false
+    RadarBtn.MouseButton1Click:Connect(function()
+        radarOn = not radarOn
+        RadarBtn.Text = radarOn and "👁️ Turn Radar OFF" or "👁️ Turn Radar ON"
+        -- Panggil remote sesuai toggle
+        pcall(function()
+            local radarRemote = safeFind("RF/UpdateFishingRadar")
+            if radarRemote then
+                radarRemote:InvokeServer(radarOn)
+                print("[👁️] Radar", radarOn and "ON" or "OFF")
+            else
+                warn("Radar remote tidak ditemukan.")
+            end
+        end)
+    end)
 end
 
 -- Character handling
