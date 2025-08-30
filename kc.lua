@@ -407,6 +407,39 @@ local function createGUI()
     AutoBtn.MouseButton1Click:Connect(function()
         autoTeleport()
     end)
+-- Speed Toggle Button
+    local SpeedBtn = Instance.new("TextButton")
+    SpeedBtn.Size = UDim2.new(1,0,0,35)
+    SpeedBtn.BackgroundColor3 = Color3.fromRGB(155, 89, 182)
+    SpeedBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    SpeedBtn.Font = Enum.Font.GothamBold
+    SpeedBtn.TextSize = 16
+    SpeedBtn.Text = "⚡ Toggle Speed"
+    SpeedBtn.Parent = ScrollFrame
+
+    local SpeedBtnCorner = Instance.new("UICorner")
+    SpeedBtnCorner.CornerRadius = UDim.new(0,6)
+    SpeedBtnCorner.Parent = SpeedBtn
+
+    -- Status
+    local speedOn = false
+    local normalSpeed = 16
+    local boostedSpeed = 30 -- ambil angka ini dari recoil coil (ganti sesuai value recoil)
+
+    SpeedBtn.MouseButton1Click:Connect(function()
+        if plr.Character and plr.Character:FindFirstChild("Humanoid") then
+            speedOn = not speedOn
+            if speedOn then
+                plr.Character.Humanoid.WalkSpeed = boostedSpeed
+                SpeedBtn.Text = "⚡ Speed ON"
+                SpeedBtn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+            else
+                plr.Character.Humanoid.WalkSpeed = normalSpeed
+                SpeedBtn.Text = "⚡ Speed OFF"
+                SpeedBtn.BackgroundColor3 = Color3.fromRGB(155, 89, 182)
+            end
+        end
+    end)
 end
 
 

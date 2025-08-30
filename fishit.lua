@@ -65,7 +65,7 @@ end
 
 -- Loop Auto Fishing
 task.spawn(function()
-    while task.wait(3) do
+    while task.wait(1) do
         if autoFishing then
             FishOnce()
             -- print singkat supaya console gak kebanjiran
