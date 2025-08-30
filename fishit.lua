@@ -1,5 +1,6 @@
 -- Fishing + Teleport GUI (dengan minimize utama yang sama seperti versi awal)
 -- Fitur: teleport pemain (dengan minimize list), sell all, auto fishing (on/off), checkpoints, copy coords, rejoin, restart, respawn
+-- Pure By hakutakaid
 
 -- Services
 local Players = game:GetService("Players")
@@ -68,7 +69,7 @@ task.spawn(function()
         if autoFishing then
             FishOnce()
             -- print singkat supaya console gak kebanjiran
-            print("[🎣] Auto Fishing: tick")
+            -- print("[🎣] Auto Fishing: tick")
         end
     end
 end)
