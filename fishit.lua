@@ -78,7 +78,7 @@ end)
 local checkpoints = {
     {name = "Kohana Volcano", pos = Vector3.new(-628.0, 55.8, 200.6)},
     {name = "Crater Island", pos = Vector3.new(952.7, 2.4, 4827.2)},
-    {name = "Checkpoint 3", pos = Vector3.new(-1399.3, 579.8, -949.9)},
+    {name = "Lost Isle", pos = Vector3.new(-3610.1, 2.4, -1304.6)},
     {name = "Checkpoint 4", pos = Vector3.new(-1701.0, 818.0, -1400.0)},
     {name = "Checkpoint 5", pos = Vector3.new(-3102.4, 1694.7, -2561.0)},
     {name = "Checkpoint 6", pos = Vector3.new(-3195.7, 1726.8, -2617.0)},
