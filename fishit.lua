@@ -91,7 +91,7 @@ local checkpoints = {
     {name = "Crater Island", pos = Vector3.new(952.7, 2.4, 4827.2)},
     {name = "Lost Isle", pos = Vector3.new(-3610.1, 2.4, -1304.6)},
     {name = "Sisyphus Statue", pos = Vector3.new(-3708.1, -135.1, -888.4)},
-    {name = "Checkpoint 5", pos = Vector3.new(-3102.4, 1694.7, -2561.0)},
+    {name = "Tropical Grove", pos = Vector3.new(-2003.6, 0.1, 3637.4)},
     {name = "Checkpoint 6", pos = Vector3.new(-3195.7, 1726.8, -2617.0)},
 }
 
