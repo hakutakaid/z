@@ -150,7 +150,7 @@ local function createGUI()
         {name = "Checkpoint 2", pos = Vector3.new(-1203.2, 263.1, -487.1)},
         {name = "Checkpoint 3", pos = Vector3.new(-1399.3, 579.8, -949.9)},
         {name = "Checkpoint 4", pos = Vector3.new(-1701.0, 818.0, -1400.0)},
-        {name = "Checkpoint 5", pos = Vector3.new(-3102.4, 1694.7, -2561.0)},
+        {name = "Checkpoint 5", pos = Vector3.new(-3323.7, 1710.0, -2350.5)},
         {name = "Checkpoint 6", pos = Vector3.new(-3195.7, 1726.8, -2617.0)},
     }
 
