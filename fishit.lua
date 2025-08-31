@@ -60,13 +60,13 @@ local function FishOnce()
             ChargeFishingRod:InvokeServer(1755155355.562756)
         end
     end)
-    task.wait(1.2)
+    task.wait(1)
     pcall(function()
         if RequestFishingMinigameStarted then
             RequestFishingMinigameStarted:InvokeServer(-1.2379989624023438, 0.9786020416845042)
         end
     end)
-    task.wait(2.3)
+    task.wait(3)
     pcall(function()
         if FishingCompleted then
             FishingCompleted:FireServer()
