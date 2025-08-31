@@ -11,6 +11,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local plr = Players.LocalPlayer
 local hrp
 
+-- Anti AFK
+pcall(function()
+    local vu = game:GetService("VirtualUser")
+    game:GetService("Players").LocalPlayer.Idled:Connect(function()
+        vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        warn("[✅] Anti AFK triggered.")
+    end)
+end)
+
 -- Remote references (cek aman)
 local netRoot = nil
 pcall(function()
