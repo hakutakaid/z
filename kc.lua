@@ -3,6 +3,27 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
 
+local player = Players.LocalPlayer
+local hrp
+
+-- Fungsi melepaskan alat yang sedang dipegang
+local function dropHeldTool()
+    local char = player.Character
+    if not char then return false end
+
+    for _, child in ipairs(char:GetChildren()) do
+        if child:IsA("Tool") and child:FindFirstChild("Handle") then
+            child.Parent = workspace
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                child.Handle.CFrame = hrp.CFrame * CFrame.new(0, -2, 0)
+            end
+            return true
+        end
+    end
+    return false
+end
+
 local plr = Players.LocalPlayer
 local hrp
 
@@ -440,7 +461,7 @@ local function createGUI()
             end
         end
     end)
-    -- Lepas Tool Button
+    -- Tombol Lepas Alat
     local DropToolBtn = Instance.new("TextButton")
     DropToolBtn.Size = UDim2.new(1,0,0,35)
     DropToolBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
