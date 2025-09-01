@@ -440,6 +440,27 @@ local function createGUI()
             end
         end
     end)
+    -- Lepas Tool Button
+    local DropToolBtn = Instance.new("TextButton")
+    DropToolBtn.Size = UDim2.new(1,0,0,35)
+    DropToolBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+    DropToolBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    DropToolBtn.Font = Enum.Font.GothamBold
+    DropToolBtn.TextSize = 16
+    DropToolBtn.Text = "🖐 Lepas Alat"
+    DropToolBtn.Parent = ScrollFrame
+    
+    local DropToolBtnCorner = Instance.new("UICorner")
+    DropToolBtnCorner.CornerRadius = UDim.new(0,6)
+    DropToolBtnCorner.Parent = DropToolBtn
+    
+    DropToolBtn.MouseButton1Click:Connect(function()
+        if dropHeldTool() then
+            print("Alat berhasil dilepas!")
+        else
+            print("Tidak ada alat yang sedang dipegang.")
+        end
+    end)
 end
 
 
