@@ -24,6 +24,9 @@ local function dropHeldTool()
     return false
 end
 
+local plr = Players.LocalPlayer
+local hrp
+
 -- Function untuk setup HRP
 local function setupHRP(char)
     hrp = char:WaitForChild("HumanoidRootPart")
@@ -316,23 +319,23 @@ local function createGUI()
         end
     end)
 
-    -- -- Actions Buttons
-    -- local RejoinBtn = Instance.new("TextButton")
-    -- RejoinBtn.Size = UDim2.new(1,0,0,35)
-    -- RejoinBtn.BackgroundColor3 = Color3.fromRGB(241,196,15)
-    -- RejoinBtn.TextColor3 = Color3.fromRGB(40,44,52)
-    -- RejoinBtn.Font = Enum.Font.GothamBold
-    -- RejoinBtn.TextSize = 16
-    -- RejoinBtn.Text = "🔄 Rejoin Server"
-    -- RejoinBtn.Parent = ScrollFrame
+    -- Actions Buttons
+    local RejoinBtn = Instance.new("TextButton")
+    RejoinBtn.Size = UDim2.new(1,0,0,35)
+    RejoinBtn.BackgroundColor3 = Color3.fromRGB(241,196,15)
+    RejoinBtn.TextColor3 = Color3.fromRGB(40,44,52)
+    RejoinBtn.Font = Enum.Font.GothamBold
+    RejoinBtn.TextSize = 16
+    RejoinBtn.Text = "🔄 Rejoin Server"
+    RejoinBtn.Parent = ScrollFrame
 
-    -- local RejoinBtnCorner = Instance.new("UICorner")
-    -- RejoinBtnCorner.CornerRadius = UDim.new(0,6)
-    -- RejoinBtnCorner.Parent = RejoinBtn
+    local RejoinBtnCorner = Instance.new("UICorner")
+    RejoinBtnCorner.CornerRadius = UDim.new(0,6)
+    RejoinBtnCorner.Parent = RejoinBtn
 
-    -- RejoinBtn.MouseButton1Click:Connect(function()
-        -- TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
-    -- end)
+    RejoinBtn.MouseButton1Click:Connect(function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
+    end)
 
     local RestartBtn = Instance.new("TextButton")
     RestartBtn.Size = UDim2.new(1,0,0,35)
@@ -496,4 +499,3 @@ end
 
 -- Detect respawn
 plr.CharacterAdded:Connect(onCharacterAdded)
-
