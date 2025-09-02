@@ -11,6 +11,24 @@ local function setupHRP(char)
     hrp = char:WaitForChild("HumanoidRootPart")
 end
 
+-- Fungsi melepaskan alat yang sedang dipegang
+local function dropHeldTool()
+    local char = player.Character
+    if not char then return false end
+
+    for _, child in ipairs(char:GetChildren()) do
+        if child:IsA("Tool") and child:FindFirstChild("Handle") then
+            child.Parent = workspace
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                child.Handle.CFrame = hrp.CFrame * CFrame.new(0, -2, 0)
+            end
+            return true
+        end
+    end
+    return false
+end
+
 -- Function untuk buat GUI
 local function createGUI()
     -- Cek jika GUI sudah ada
