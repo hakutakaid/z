@@ -24,43 +24,10 @@ local function dropHeldTool()
     return false
 end
 
-local plr = Players.LocalPlayer
-local hrp
-
 -- Function untuk setup HRP
 local function setupHRP(char)
     hrp = char:WaitForChild("HumanoidRootPart")
 end
-
-local Lighting = game:GetService("Lighting")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- RemoteEvent
-local event = ReplicatedStorage:FindFirstChild("ChangeWeather") or Instance.new("RemoteEvent")
-event.Name = "ChangeWeather"
-event.Parent = ReplicatedStorage
-
--- Set default jam 8 pagi
-Lighting.ClockTime = 8
-Lighting.TimeOfDay = "08:00:00"
-
--- Lock jam 8 kalau siang
-Lighting.Changed:Connect(function()
-    if Lighting.ClockTime ~= 8 and Lighting.TimeOfDay:sub(1,2) == "08" then
-        Lighting.ClockTime = 8
-    end
-end)
-
--- Event handler dari client
-event.OnServerEvent:Connect(function(player, mode)
-    if mode == "Day" then
-        Lighting.TimeOfDay = "08:00:00"
-        Lighting.ClockTime = 8
-    elseif mode == "Night" then
-        Lighting.TimeOfDay = "20:00:00"
-        Lighting.ClockTime = 20
-    end
-end)
 
 -- Function untuk buat GUI
 local function createGUI()
@@ -349,36 +316,6 @@ local function createGUI()
         end
     end)
 
--- Tombol Cuaca
-    local WeatherBtn = Instance.new("TextButton")
-    WeatherBtn.Size = UDim2.new(1,0,0,35)
-    WeatherBtn.BackgroundColor3 = Color3.fromRGB(52, 73, 94)
-    WeatherBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    WeatherBtn.Font = Enum.Font.GothamBold
-    WeatherBtn.TextSize = 16
-    WeatherBtn.Text = "☀️ Siang"
-    WeatherBtn.Parent = ScrollFrame
-
-    local WeatherBtnCorner = Instance.new("UICorner")
-    WeatherBtnCorner.CornerRadius = UDim.new(0,6)
-    WeatherBtnCorner.Parent = WeatherBtn
-
-    local isDay = true
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local ChangeWeather = ReplicatedStorage:WaitForChild("ChangeWeather")
-
-    WeatherBtn.MouseButton1Click:Connect(function()
-        if isDay then
-            ChangeWeather:FireServer("Night")
-            WeatherBtn.Text = "🌙 Malam"
-            WeatherBtn.BackgroundColor3 = Color3.fromRGB(44, 62, 80)
-        else
-            ChangeWeather:FireServer("Day")
-            WeatherBtn.Text = "☀️ Siang"
-            WeatherBtn.BackgroundColor3 = Color3.fromRGB(52, 73, 94)
-        end
-        isDay = not isDay
-    end)
     -- -- Actions Buttons
     -- local RejoinBtn = Instance.new("TextButton")
     -- RejoinBtn.Size = UDim2.new(1,0,0,35)
