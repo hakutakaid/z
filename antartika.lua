@@ -227,7 +227,7 @@ local function createGUI()
         BtnCorner.Parent = btn
 
         btn.MouseButton1Click:Connect(function()
-            if hrp then hrp.CFrame = CFrame.new(cp.pos) end
+            if hrp then hrp.CFrame = CFrame.new(cp.pos + Vector3.new(0, 3, 0)) end
             CPList.Visible = false
             CPList.Size = UDim2.new(1,0,0,0)
             CPDropdown.Text = "▼ Select Checkpoint"
