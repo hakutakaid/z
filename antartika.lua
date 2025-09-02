@@ -13,7 +13,7 @@ end
 
 -- Fungsi melepaskan alat yang sedang dipegang
 local function dropHeldTool()
-    local char = player.Character
+    local char = plr.Character
     if not char then return false end
 
     for _, child in ipairs(char:GetChildren()) do
@@ -168,7 +168,7 @@ local function createGUI()
         {name = "Checkpoint 2", pos = Vector3.new(-3779.0, 212.3, 257.6)},
         {name = "Checkpoint 3", pos = Vector3.new(1686.3, 105.9, -94.8)},
         {name = "Checkpoint 4", pos = Vector3.new(5785.5, 321.0, -103.5)},
-        {name = "Checkpoint 5", pos = Vector3.new(8978.2, 598.5, 159.3},
+        {name = "Checkpoint 5", pos = Vector3.new(8978.2, 598.5, 159.3)},
         {name = "Checkpoint 6", pos = Vector3.new(10990.1, 549.1, 108.9)},
     }
 
