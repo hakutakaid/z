@@ -319,23 +319,56 @@ local function createGUI()
         end
     end)
 
-    -- Actions Buttons
-    local RejoinBtn = Instance.new("TextButton")
-    RejoinBtn.Size = UDim2.new(1,0,0,35)
-    RejoinBtn.BackgroundColor3 = Color3.fromRGB(241,196,15)
-    RejoinBtn.TextColor3 = Color3.fromRGB(40,44,52)
-    RejoinBtn.Font = Enum.Font.GothamBold
-    RejoinBtn.TextSize = 16
-    RejoinBtn.Text = "🔄 Rejoin Server"
-    RejoinBtn.Parent = ScrollFrame
+-- Tombol Cuaca
+    local WeatherBtn = Instance.new("TextButton")
+    WeatherBtn.Size = UDim2.new(1,0,0,35)
+    WeatherBtn.BackgroundColor3 = Color3.fromRGB(52, 73, 94)
+    WeatherBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    WeatherBtn.Font = Enum.Font.GothamBold
+    WeatherBtn.TextSize = 16
+    WeatherBtn.Text = "☀️ Siang"
+    WeatherBtn.Parent = ScrollFrame
 
-    local RejoinBtnCorner = Instance.new("UICorner")
-    RejoinBtnCorner.CornerRadius = UDim.new(0,6)
-    RejoinBtnCorner.Parent = RejoinBtn
+    local WeatherBtnCorner = Instance.new("UICorner")
+    WeatherBtnCorner.CornerRadius = UDim.new(0,6)
+    WeatherBtnCorner.Parent = WeatherBtn
 
-    RejoinBtn.MouseButton1Click:Connect(function()
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
+    -- Status Cuaca
+    local isDay = true
+
+    WeatherBtn.MouseButton1Click:Connect(function()
+        local Lighting = game:GetService("Lighting")
+        if isDay then
+            -- Ganti ke Malam
+            Lighting.TimeOfDay = "20:00:00"
+            WeatherBtn.Text = "🌙 Malam"
+            WeatherBtn.BackgroundColor3 = Color3.fromRGB(44, 62, 80)
+        else
+            -- Ganti ke Siang
+            Lighting.TimeOfDay = "08:00:00"
+            WeatherBtn.Text = "☀️ Siang"
+            WeatherBtn.BackgroundColor3 = Color3.fromRGB(52, 73, 94)
+        end
+        isDay = not isDay
     end)
+
+    -- -- Actions Buttons
+    -- local RejoinBtn = Instance.new("TextButton")
+    -- RejoinBtn.Size = UDim2.new(1,0,0,35)
+    -- RejoinBtn.BackgroundColor3 = Color3.fromRGB(241,196,15)
+    -- RejoinBtn.TextColor3 = Color3.fromRGB(40,44,52)
+    -- RejoinBtn.Font = Enum.Font.GothamBold
+    -- RejoinBtn.TextSize = 16
+    -- RejoinBtn.Text = "🔄 Rejoin Server"
+    -- RejoinBtn.Parent = ScrollFrame
+
+    -- local RejoinBtnCorner = Instance.new("UICorner")
+    -- RejoinBtnCorner.CornerRadius = UDim.new(0,6)
+    -- RejoinBtnCorner.Parent = RejoinBtn
+
+    -- RejoinBtn.MouseButton1Click:Connect(function()
+        -- TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
+    -- end)
 
     local RestartBtn = Instance.new("TextButton")
     RestartBtn.Size = UDim2.new(1,0,0,35)
@@ -499,3 +532,4 @@ end
 
 -- Detect respawn
 plr.CharacterAdded:Connect(onCharacterAdded)
+
