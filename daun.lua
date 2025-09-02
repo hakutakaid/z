@@ -297,23 +297,23 @@ local function createGUI()
         end
     end)
 
-    -- Actions Buttons
-    local RejoinBtn = Instance.new("TextButton")
-    RejoinBtn.Size = UDim2.new(1,0,0,35)
-    RejoinBtn.BackgroundColor3 = Color3.fromRGB(241,196,15)
-    RejoinBtn.TextColor3 = Color3.fromRGB(40,44,52)
-    RejoinBtn.Font = Enum.Font.GothamBold
-    RejoinBtn.TextSize = 16
-    RejoinBtn.Text = "🔄 Rejoin Server"
-    RejoinBtn.Parent = ScrollFrame
+    -- -- Actions Buttons
+    -- local RejoinBtn = Instance.new("TextButton")
+    -- RejoinBtn.Size = UDim2.new(1,0,0,35)
+    -- RejoinBtn.BackgroundColor3 = Color3.fromRGB(241,196,15)
+    -- RejoinBtn.TextColor3 = Color3.fromRGB(40,44,52)
+    -- RejoinBtn.Font = Enum.Font.GothamBold
+    -- RejoinBtn.TextSize = 16
+    -- RejoinBtn.Text = "🔄 Rejoin Server"
+    -- RejoinBtn.Parent = ScrollFrame
 
-    local RejoinBtnCorner = Instance.new("UICorner")
-    RejoinBtnCorner.CornerRadius = UDim.new(0,6)
-    RejoinBtnCorner.Parent = RejoinBtn
+    -- local RejoinBtnCorner = Instance.new("UICorner")
+    -- RejoinBtnCorner.CornerRadius = UDim.new(0,6)
+    -- RejoinBtnCorner.Parent = RejoinBtn
 
-    RejoinBtn.MouseButton1Click:Connect(function()
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
-    end)
+    -- RejoinBtn.MouseButton1Click:Connect(function()
+        -- TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
+    -- end)
 
     local RestartBtn = Instance.new("TextButton")
     RestartBtn.Size = UDim2.new(1,0,0,35)
@@ -405,6 +405,27 @@ local function createGUI()
 
     AutoBtn.MouseButton1Click:Connect(function()
         autoTeleport()
+    end)
+    -- Tombol Lepas Alat
+    local DropToolBtn = Instance.new("TextButton")
+    DropToolBtn.Size = UDim2.new(1,0,0,35)
+    DropToolBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+    DropToolBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    DropToolBtn.Font = Enum.Font.GothamBold
+    DropToolBtn.TextSize = 16
+    DropToolBtn.Text = "🖐 Lepas Alat"
+    DropToolBtn.Parent = ScrollFrame
+    
+    local DropToolBtnCorner = Instance.new("UICorner")
+    DropToolBtnCorner.CornerRadius = UDim.new(0,6)
+    DropToolBtnCorner.Parent = DropToolBtn
+    
+    DropToolBtn.MouseButton1Click:Connect(function()
+        if dropHeldTool() then
+            print("Alat berhasil dilepas!")
+        else
+            print("Tidak ada alat yang sedang dipegang.")
+        end
     end)
 end
 
