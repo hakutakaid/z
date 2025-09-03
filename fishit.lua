@@ -85,14 +85,13 @@ task.spawn(function()
     end
 end)
 
--- Checkpoints list (sama seperti mentahanmu)
 local checkpoints = {
-    {name = "Kohana Volcano", pos = Vector3.new(-628.0, 55.8, 200.6)},
-    {name = "Crater Island", pos = Vector3.new(952.7, 2.4, 4827.2)},
-    {name = "Lost Isle", pos = Vector3.new(-3610.1, 2.4, -1304.6)},
-    {name = "Sisyphus Statue", pos = Vector3.new(-3708.1, -135.1, -888.4)},
-    {name = "Tropical Grove", pos = Vector3.new(-2003.6, 0.1, 3637.4)},
-    {name = "Treasure Room", pos = Vector3.new(-3603.8, -282.4, -1666.3)},
+    ["Kohana Volcano"] = CFrame.new(-628.0, 55.8, 200.6, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Crater Island"]  = CFrame.new(952.7, 2.4, 4827.2, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Lost Isle"]      = CFrame.new(-3610.1, 2.4, -1304.6, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Sisyphus Statue"]= CFrame.new(-3708.1, -135.1, -888.4, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Tropical Grove"] = CFrame.new(-2003.6, 0.1, 3637.4, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Treasure Room"]  = CFrame.new(-3603.8, -282.4, -1666.3, 1, 0, 0, 0, 1, 0, 0, 0, 1),
 }
 
 -- Fungsi respawn (force)
@@ -201,22 +200,22 @@ local function createGUI()
     CoordLabel.Text = "X:0.0 Y:0.0 Z:0.0"
     CoordLabel.TextXAlignment = Enum.TextXAlignment.Left
     CoordLabel.Parent = ScrollFrame
-
+    
     local CoordPad = Instance.new("UIPadding")
     CoordPad.PaddingLeft = UDim.new(0, 10)
     CoordPad.Parent = CoordLabel
-
+    
     local CoordCorner = Instance.new("UICorner")
     CoordCorner.CornerRadius = UDim.new(0, 6)
     CoordCorner.Parent = CoordLabel
-
+    
     RunService.RenderStepped:Connect(function()
         if hrp and not minimized then
             local p = hrp.Position
             CoordLabel.Text = string.format("X: %.1f Y: %.1f Z: %.1f", p.X, p.Y, p.Z)
         end
     end)
-
+    
     -- Copy Coord Button
     local CopyBtn = Instance.new("TextButton")
     CopyBtn.Size = UDim2.new(1, 0, 0, 35)
@@ -224,20 +223,33 @@ local function createGUI()
     CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     CopyBtn.Font = Enum.Font.GothamBold
     CopyBtn.TextSize = 16
-    CopyBtn.Text = "📋 Copy Current Coordinates"
+    CopyBtn.Text = "📋 Copy Current CFrame"
     CopyBtn.Parent = ScrollFrame
-
+    
     local CopyBtnCorner = Instance.new("UICorner")
     CopyBtnCorner.CornerRadius = UDim.new(0, 6)
     CopyBtnCorner.Parent = CopyBtn
-
+    
     CopyBtn.MouseButton1Click:Connect(function()
         if hrp and setclipboard then
-            setclipboard(string.format("%.1f, %.1f, %.1f", hrp.Position.X, hrp.Position.Y, hrp.Position.Z))
-            print("[📋] Coordinates copied.")
+            local cf = hrp.CFrame
+            local x, y, z = cf.X, cf.Y, cf.Z
+            local r00, r01, r02,
+                  r10, r11, r12,
+                  r20, r21, r22 = cf:GetComponents()
+    
+            local cfString = string.format(
+                "CFrame.new(%.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f)",
+                x, y, z,
+                r00, r01, r02,
+                r10, r11, r12,
+                r20, r21, r22
+            )
+    
+            setclipboard(cfString)
+            print("[📋] Full CFrame copied:", cfString)
         end
     end)
-
     -- Checkpoints dropdown (ringkas)
     local CPDropdown = Instance.new("TextButton")
     CPDropdown.Size = UDim2.new(1, 0, 0, 35)
@@ -273,25 +285,26 @@ local function createGUI()
         end
     end)
 
-    for i, cp in ipairs(checkpoints) do
+    for name, cf in pairs(checkpoints) do
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 0, 28)
         btn.BackgroundColor3 = Color3.fromRGB(120, 70, 150)
         btn.TextColor3 = Color3.fromRGB(220, 220, 220)
         btn.Font = Enum.Font.Gotham
         btn.TextSize = 14
-        btn.Text = cp.name
+        btn.Text = name
         btn.Parent = CPList
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0,5)
-
+    
         btn.MouseButton1Click:Connect(function()
-            if hrp then hrp.CFrame = CFrame.new(cp.pos) end
+            if hrp then 
+                hrp.CFrame = cf
+            end
             CPList.Visible = false
             CPList.Size = UDim2.new(1,0,0,0)
             CPDropdown.Text = "▼ Select Checkpoint"
         end)
     end
-
     -- Sell All Button
     local SellBtn = Instance.new("TextButton")
     SellBtn.Size = UDim2.new(1,0,0,35)

@@ -126,12 +126,13 @@ end
 -- CHECKPOINTS
 -- ======================================
 local checkpoints = {
-    {name = "Kohana Volcano", pos = Vector3.new(-628.0, 55.8, 200.6)},
-    {name = "Crater Island", pos = Vector3.new(952.7, 2.4, 4827.2)},
-    {name = "Lost Isle", pos = Vector3.new(-3610.1, 2.4, -1304.6)},
-    {name = "Sisyphus Statue", pos = Vector3.new(-3708.1, -135.1, -888.4)},
-    {name = "Tropical Grove", pos = Vector3.new(-2003.6, 0.1, 3637.4)},
-    {name = "Treasure Room", pos = Vector3.new(-3603.8, -282.4, -1666.3)},
+    ["Kohana Volcano"] = CFrame.new(-628.0, 55.8, 200.6, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Crater Island"]  = CFrame.new(952.7, 2.4, 4827.2, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Lost Isle"]      = CFrame.new(-3610.1, 2.4, -1304.6, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Sisyphus Statue"]= CFrame.new(-3784.905029, -135.073914, -950.122864, -3784.905029, -135.073914, -950.122864, -0.052487, -0.000000, -0.998622, 0.000000, 1.000000, -0.000000),
+    ["Tropical Grove"] = CFrame.new(-2003.6, 0.1, 3637.4, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Treasure Room"]  = CFrame.new(-3603.8, -282.4, -1666.3, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Esoteric Depths"]  = CFrame.new(3256.134277, -1300.655029, 1392.167725, 3256.134277, -1300.655029, 1392.167725, 0.396139, -0.000000, -0.918190, 0.000000, 1.000000, -0.000000),
 }
 
 -- ======================================
@@ -208,7 +209,66 @@ local function createGUI()
     UIPad.PaddingLeft = UDim.new(0, 5)
     UIPad.PaddingRight = UDim.new(0, 5)
     UIPad.Parent = ScrollFrame
-
+    -- Coordinate Display
+    local CoordLabel = Instance.new("TextLabel")
+    CoordLabel.Size = UDim2.new(1, 0, 0, 30)
+    CoordLabel.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
+    CoordLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+    CoordLabel.Font = Enum.Font.Code
+    CoordLabel.TextSize = 16
+    CoordLabel.Text = "X:0.0 Y:0.0 Z:0.0"
+    CoordLabel.TextXAlignment = Enum.TextXAlignment.Left
+    CoordLabel.Parent = ScrollFrame
+    
+    local CoordPad = Instance.new("UIPadding")
+    CoordPad.PaddingLeft = UDim.new(0, 10)
+    CoordPad.Parent = CoordLabel
+    
+    local CoordCorner = Instance.new("UICorner")
+    CoordCorner.CornerRadius = UDim.new(0, 6)
+    CoordCorner.Parent = CoordLabel
+    
+    RunService.RenderStepped:Connect(function()
+        if hrp and not minimized then
+            local p = hrp.Position
+            CoordLabel.Text = string.format("X: %.1f Y: %.1f Z: %.1f", p.X, p.Y, p.Z)
+        end
+    end)
+    
+    -- Copy Coord Button
+    local CopyBtn = Instance.new("TextButton")
+    CopyBtn.Size = UDim2.new(1, 0, 0, 35)
+    CopyBtn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
+    CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CopyBtn.Font = Enum.Font.GothamBold
+    CopyBtn.TextSize = 16
+    CopyBtn.Text = "📋 Copy Current CFrame"
+    CopyBtn.Parent = ScrollFrame
+    
+    local CopyBtnCorner = Instance.new("UICorner")
+    CopyBtnCorner.CornerRadius = UDim.new(0, 6)
+    CopyBtnCorner.Parent = CopyBtn
+    
+    CopyBtn.MouseButton1Click:Connect(function()
+        if hrp and setclipboard then
+            local cf = hrp.CFrame
+            local x, y, z = cf.X, cf.Y, cf.Z
+            local r00, r01, r02,
+                  r10, r11, r12,
+                  r20, r21, r22 = cf:GetComponents()
+    
+            local cfString = string.format(
+                "CFrame.new(%.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f)",
+                x, y, z,
+                r00, r01, r02,
+                r10, r11, r12,
+                r20, r21, r22
+            )
+    
+            setclipboard(cfString)
+            print("[📋] Full CFrame copied:", cfString)
+        end
+    end)
     -- AUTO FISHING BUTTON
     local AutoFishBtn = Instance.new("TextButton")
     AutoFishBtn.Size = UDim2.new(1,0,0,35)
@@ -260,19 +320,20 @@ local function createGUI()
     CPDropdown.Text = "▼ Select Place"
     CPDropdown.Parent = ScrollFrame
     Instance.new("UICorner", CPDropdown).CornerRadius = UDim.new(0,6)
-
+    
     local CPList = Instance.new("Frame")
     CPList.Size = UDim2.new(1, 0, 0, 0)
     CPList.BackgroundColor3 = Color3.fromRGB(60, 40, 70)
     CPList.Visible = false
+    CPList.ZIndex = 20 -- langsung kasih ZIndex di sini
     CPList.Parent = ScrollFrame
     Instance.new("UICorner", CPList).CornerRadius = UDim.new(0,6)
-
+    
     local CPLayout = Instance.new("UIListLayout")
     CPLayout.SortOrder = Enum.SortOrder.LayoutOrder
     CPLayout.Padding = UDim.new(0, 2)
     CPLayout.Parent = CPList
-
+    
     CPDropdown.MouseButton1Click:Connect(function()
         CPList.Visible = not CPList.Visible
         local count = #checkpoints
@@ -284,33 +345,36 @@ local function createGUI()
             CPDropdown.Text = "▼ Select Place"
         end
     end)
-
-    for i, cp in ipairs(checkpoints) do
+    
+    for name, cf in pairs(checkpoints) do
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 0, 28)
         btn.BackgroundColor3 = Color3.fromRGB(120, 70, 150)
         btn.TextColor3 = Color3.fromRGB(220, 220, 220)
         btn.Font = Enum.Font.Gotham
         btn.TextSize = 14
-        btn.Text = cp.name
+        btn.Text = name
+        btn.ZIndex = 21 -- langsung kasih ZIndex ke tombolnya
         btn.Parent = CPList
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0,5)
-
+    
         btn.MouseButton1Click:Connect(function()
-            if hrp then hrp.CFrame = CFrame.new(cp.pos) end
+            if hrp then 
+                hrp.CFrame = cf
+            end
             CPList.Visible = false
             CPList.Size = UDim2.new(1,0,0,0)
             CPDropdown.Text = "▼ Select Checkpoint"
         end)
     end
-
     -- Teleport header with its own minimize button
     local TeleportFrame = Instance.new("Frame")
     TeleportFrame.Size = UDim2.new(1,0,0,35)
     TeleportFrame.BackgroundColor3 = Color3.fromRGB(70,70,80)
+    TeleportFrame.ZIndex = 10
     TeleportFrame.Parent = ScrollFrame
     Instance.new("UICorner", TeleportFrame).CornerRadius = UDim.new(0,6)
-
+    
     local TeleportLabel = Instance.new("TextLabel")
     TeleportLabel.Size = UDim2.new(1,-40,1,0)
     TeleportLabel.Position = UDim2.new(0,10,0,0)
@@ -320,8 +384,9 @@ local function createGUI()
     TeleportLabel.Font = Enum.Font.GothamBold
     TeleportLabel.TextSize = 16
     TeleportLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TeleportLabel.ZIndex = 11
     TeleportLabel.Parent = TeleportFrame
-
+    
     local TPMinBtn = Instance.new("TextButton")
     TPMinBtn.Size = UDim2.new(0,30,0,30)
     TPMinBtn.Position = UDim2.new(1,-35,0,2)
@@ -330,21 +395,23 @@ local function createGUI()
     TPMinBtn.TextColor3 = Color3.fromRGB(255,255,255)
     TPMinBtn.Font = Enum.Font.GothamBold
     TPMinBtn.TextSize = 20
+    TPMinBtn.ZIndex = 11
     TPMinBtn.Parent = TeleportFrame
     Instance.new("UICorner", TPMinBtn).CornerRadius = UDim.new(0,6)
-
+    
     local PlayerList = Instance.new("Frame")
     PlayerList.Size = UDim2.new(1,0,0,0)
     PlayerList.BackgroundColor3 = Color3.fromRGB(30,60,40)
     PlayerList.Visible = true
+    PlayerList.ZIndex = 10
     PlayerList.Parent = ScrollFrame
     Instance.new("UICorner", PlayerList).CornerRadius = UDim.new(0,6)
-
+    
     local PlayerLayout = Instance.new("UIListLayout")
     PlayerLayout.SortOrder = Enum.SortOrder.LayoutOrder
     PlayerLayout.Padding = UDim.new(0,2)
     PlayerLayout.Parent = PlayerList
-
+    
     -- refresh player list (buat tombol teleport per player)
     local function refreshPlayers()
         for _, child in ipairs(PlayerList:GetChildren()) do
@@ -362,9 +429,10 @@ local function createGUI()
                 btn.Font = Enum.Font.Gotham
                 btn.TextSize = 14
                 btn.Text = "➡️ "..target.Name
+                btn.ZIndex = 11
                 btn.Parent = PlayerList
                 Instance.new("UICorner", btn).CornerRadius = UDim.new(0,5)
-
+    
                 btn.MouseButton1Click:Connect(function()
                     if hrp and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                         hrp.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0,2,0)
@@ -375,21 +443,24 @@ local function createGUI()
                 end)
             end
         end
-        -- set PlayerList size based on children
-        local count = #Players:GetPlayers()-1
-        if count < 0 then count = 0 end
+        -- set PlayerList size based on jumlah tombol player
+        local count = 0
+        for _, child in ipairs(PlayerList:GetChildren()) do
+            if child:IsA("TextButton") then
+                count += 1
+            end
+        end
         PlayerList.Size = UDim2.new(1,0,0, math.max(0, count*30 + 10))
     end
-
+    
     TPMinBtn.MouseButton1Click:Connect(function()
         PlayerList.Visible = not PlayerList.Visible
         TPMinBtn.Text = PlayerList.Visible and "-" or "+"
     end)
-
+    
     refreshPlayers()
     Players.PlayerAdded:Connect(refreshPlayers)
     Players.PlayerRemoving:Connect(refreshPlayers)
-
     -- Radar Toggle Button
     local RadarBtn = Instance.new("TextButton")
     RadarBtn.Size = UDim2.new(1,0,0,35)
