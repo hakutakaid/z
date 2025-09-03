@@ -122,17 +122,15 @@ local function RunFishingLoop()
     end)
 end
 
--- ======================================
--- CHECKPOINTS
--- ======================================
+
 local checkpoints = {
-    ["Kohana Volcano"] = CFrame.new(-628.0, 55.8, 200.6, 1, 0, 0, 0, 1, 0, 0, 0, 1),
-    ["Crater Island"]  = CFrame.new(952.7, 2.4, 4827.2, 1, 0, 0, 0, 1, 0, 0, 0, 1),
-    ["Lost Isle"]      = CFrame.new(-3610.1, 2.4, -1304.6, 1, 0, 0, 0, 1, 0, 0, 0, 1),
-    ["Sisyphus Statue"]= CFrame.new(-3784.905029, -135.073914, -950.122864, -3784.905029, -135.073914, -950.122864, -0.052487, -0.000000, -0.998622, 0.000000, 1.000000, -0.000000),
-    ["Tropical Grove"] = CFrame.new(-2003.6, 0.1, 3637.4, 1, 0, 0, 0, 1, 0, 0, 0, 1),
-    ["Treasure Room"]  = CFrame.new(-3603.8, -282.4, -1666.3, 1, 0, 0, 0, 1, 0, 0, 0, 1),
-    ["Esoteric Depths"]  = CFrame.new(3256.134277, -1300.655029, 1392.167725, 3256.134277, -1300.655029, 1392.167725, 0.396139, -0.000000, -0.918190, 0.000000, 1.000000, -0.000000),
+    ["Kohana Volcano"]  = CFrame.new(-628.0, 55.8, 200.6),
+    ["Crater Island"]   = CFrame.new(952.7, 2.4, 4827.2),
+    ["Lost Isle"]       = CFrame.new(-3610.1, 2.4, -1304.6),
+    ["Sisyphus Statue"] = CFrame.new(-3788.9, -135.0, -950.0), -- fix: cuma posisi, nggak nyungsep
+    ["Tropical Grove"]  = CFrame.new(-2003.6, 0.1, 3637.4),
+    ["Treasure Room"]   = CFrame.new(-3603.8, -282.4, -1666.3),
+    ["Esoteric Depths"] = CFrame.new(3256.1, -1300.6, 1392.1),
 }
 
 -- ======================================
@@ -245,17 +243,15 @@ local function createGUI()
     CopyBtn.Text = "📋 Copy Current CFrame"
     CopyBtn.Parent = ScrollFrame
     
-    local CopyBtnCorner = Instance.new("UICorner")
-    CopyBtnCorner.CornerRadius = UDim.new(0, 6)
-    CopyBtnCorner.Parent = CopyBtn
+    Instance.new("UICorner", CopyBtn).CornerRadius = UDim.new(0, 6)
     
     CopyBtn.MouseButton1Click:Connect(function()
         if hrp and setclipboard then
-            local cf = hrp.CFrame
-            local x, y, z = cf.X, cf.Y, cf.Z
-            local r00, r01, r02,
+            -- Get full components (posisi + rotasi)
+            local x, y, z,
+                  r00, r01, r02,
                   r10, r11, r12,
-                  r20, r21, r22 = cf:GetComponents()
+                  r20, r21, r22 = hrp.CFrame:GetComponents()
     
             local cfString = string.format(
                 "CFrame.new(%.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f)",
