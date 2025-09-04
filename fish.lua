@@ -133,6 +133,26 @@ local checkpoints = {
     ["Esoteric Depths"] = CFrame.new(3256.1, -1300.6, 1392.1),
 }
 
+
+-- ======================================
+-- AUTO ACCEPT TRADE
+-- ======================================
+local autoAcceptTrade = false
+
+-- Pastikan remote trade tersedia
+local AwaitTradeResponse = safeFind("RF/AwaitTradeResponse")
+
+if AwaitTradeResponse then
+    AwaitTradeResponse.OnClientInvoke = function(fromPlayer, timeNow)
+        if autoAcceptTrade then
+            print("[🤝] Auto accepted trade request from:", fromPlayer and fromPlayer.Name or "Unknown")
+            return true
+        end
+        return nil -- default: biar popup normal muncul
+    end
+end
+
+
 -- ======================================
 -- GUI CREATOR
 -- ======================================
@@ -483,7 +503,29 @@ local function createGUI()
             end
         end)
     end)
-
+    -- Tambahin tombol ke GUI
+    local AutoTradeBtn = Instance.new("TextButton")
+    AutoTradeBtn.Size = UDim2.new(1,0,0,35)
+    AutoTradeBtn.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
+    AutoTradeBtn.TextColor3 = Color3.fromRGB(0,0,0)
+    AutoTradeBtn.Font = Enum.Font.GothamBold
+    AutoTradeBtn.TextSize = 16
+    AutoTradeBtn.Text = "▶️ Auto Accept Trade: OFF"
+    AutoTradeBtn.Parent = ScrollFrame
+    Instance.new("UICorner", AutoTradeBtn).CornerRadius = UDim.new(0,6)
+    
+    AutoTradeBtn.MouseButton1Click:Connect(function()
+        autoAcceptTrade = not autoAcceptTrade
+        if autoAcceptTrade then
+            AutoTradeBtn.Text = "⏸ Auto Accept Trade: ON"
+            AutoTradeBtn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+            print("[🤝] Auto Accept Trade ENABLED")
+        else
+            AutoTradeBtn.Text = "▶️ Auto Accept Trade: OFF"
+            AutoTradeBtn.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
+            print("[🤝] Auto Accept Trade DISABLED")
+        end
+    end)
     -- >>> sisanya sama (Teleport, Sell All, Checkpoints, Rejoin, Restart, Respawn, Radar) <<<
     -- (biar ga kepanjangan aku ga paste ulang, tinggal kamu merge aja ke bagian ScrollFrame)
 end
