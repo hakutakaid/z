@@ -1,6 +1,6 @@
 -- ======================================
 -- Fishing + Location GUI (WindUI Refactor)
--- Features: Auto Fishing, Auto Trade, Radar, Sell All, Teleport Location, Teleport Player
+-- Features: Auto Fishing, Auto Trade, Radar, Sell All, Teleport Location, Teleport Player, Copy Position
 -- Pure by hakutakaid (Refactor WindUI by ChatGPT)
 -- ======================================
 
@@ -130,10 +130,12 @@ local checkpoints = {
     ["Kohana Volcano"]  = CFrame.new(-628.0, 55.8, 200.6),
     ["Crater Island"]   = CFrame.new(952.7, 2.4, 4827.2),
     ["Lost Isle"]       = CFrame.new(-3610.1, 2.4, -1304.6),
-    ["Sisyphus Statue"] = CFrame.new(-3788.9, -135.0, -950.0), -- fix posisi
+    ["Sisyphus Statue"] = CFrame.new(-3788.9, -135.0, -950.0),
     ["Tropical Grove"]  = CFrame.new(-2003.6, 0.1, 3637.4),
     ["Treasure Room"]   = CFrame.new(-3603.8, -282.4, -1666.3),
     ["Esoteric Depths"] = CFrame.new(3256.1, -1300.6, 1392.1),
+    ["Weater Machine"] = CFrame.new(-1442, -3, 1926),
+    ["Coral Reefs"] = CFrame.new(-2725, 2, 2200),
 }
 
 -- ======================================
@@ -200,8 +202,9 @@ MainSection:Button({
 -- LOCATION TAB
 -- ======================================
 local LocationTab = Window:Tab({ Title = "Location", Icon = "map" })
-local LocSection = LocationTab:Section({ Title = "Checkpoints" })
+local LocSection = LocationTab:Section({ Title = "Location" })
 
+-- Tombol Checkpoints
 for name, cf in pairs(checkpoints) do
     LocSection:Button({
         Title = "📍 " .. name,
@@ -210,6 +213,33 @@ for name, cf in pairs(checkpoints) do
         end
     })
 end
+
+-- =========================
+-- Tombol Copy Position di bawah Teleport Player
+-- =========================
+local CopyPosSection = LocationTab:Section({ Title = "Other Actions" })
+
+CopyPosSection:Button({
+    Title = "📋 Copy Position",
+    Callback = function()
+        local char = plr.Character
+        local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChildWhichIsA("BasePart"))
+        if not root then
+            warn("[⚠️] Character or root part not found.")
+            return
+        end
+
+        local pos = root.Position
+        local roundedPos = math.round(pos.X) .. ", " .. math.round(pos.Y) .. ", " .. math.round(pos.Z)
+
+        if setclipboard then
+            setclipboard(roundedPos)
+            print("[📋] Position copied to clipboard:", roundedPos)
+        else
+            print("[📋] Position:", roundedPos)
+        end
+    end
+})
 
 -- TELEPORT PLAYER
 local PlayerSection = LocationTab:Section({ Title = "Teleport Player" })
