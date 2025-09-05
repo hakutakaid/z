@@ -136,6 +136,7 @@ local checkpoints = {
     ["Esoteric Depths"] = CFrame.new(3256.1, -1300.6, 1392.1),
     ["Weater Machine"] = CFrame.new(-1442, -3, 1926),
     ["Coral Reefs"] = CFrame.new(-2725, 2, 2200),
+    ["Snow Sea"] = CFrame.new(2237, 3, 2909),
 }
 
 -- ======================================
