@@ -1,230 +1,365 @@
--- Koordinat/Checkpoint GUI (refactor dengan UICorner + drag via title bar)
+-- Load WindUI
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
---// Services
-local TeleportService = game:GetService("TeleportService")
-local Players         = game:GetService("Players")
-local RunService      = game:GetService("RunService")
-local UserInputService= game:GetService("UserInputService")
+-- Buat window
+local Window = WindUI:CreateWindow({
+    Title = "Mount Sumbing",
+    Icon = "door-open",
+    Author = "HakutakaID",
+    Folder = "ScriptHub",
+    Size = UDim2.fromOffset(580, 460),
+    Transparent = true,
+    Theme = "Dark",
+    Resizable = true,
+    SideBarWidth = 200,
+    ScrollBarEnabled = true
+})
 
---// Player/Character
-local plr = Players.LocalPlayer
-local hrp
+-- Services
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local Terrain = workspace:FindFirstChildOfClass("Terrain")
 
-local function refreshHRP(char)
-    hrp = char:WaitForChild("HumanoidRootPart")
+-- Helpers
+local function getRoot(char)
+    return char and char:FindFirstChild("HumanoidRootPart")
 end
 
-refreshHRP(plr.Character or plr.CharacterAdded:Wait())
-plr.CharacterAdded:Connect(refreshHRP)
-
-RunService.Heartbeat:Connect(function()
-    if not hrp or not hrp.Parent then
-        local char = plr.Character or plr.CharacterAdded:Wait()
-        hrp = char:WaitForChild("HumanoidRootPart")
+local function breakVelocity(char)
+    local BeenASecond = false
+    task.delay(1, function() BeenASecond = true end)
+    while not BeenASecond do
+        for _, v in ipairs(char:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.Velocity, v.RotVelocity = Vector3.zero, Vector3.zero
+            end
+        end
+        task.wait()
     end
-end)
-
---// GUI Instances
-local ScreenGui   = Instance.new("ScreenGui")
-ScreenGui.Name    = "KoordinatCheckpoint"
-ScreenGui.Parent  = game.CoreGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.ResetOnSpawn   = false
-
-local Frame       = Instance.new("Frame")
-Frame.Parent      = ScreenGui
-Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Frame.Position    = UDim2.new(0.05, 0, 0.05, 0)
-Frame.Size        = UDim2.new(0, 230, 0, 470)
-Frame.Active      = true
-
-local FrameCorner = Instance.new("UICorner")
-FrameCorner.CornerRadius = UDim.new(0, 12)
-FrameCorner.Parent = Frame
-
--- Title bar (dipakai drag + tombol minimize)
-local TitleBar    = Instance.new("TextButton")
-TitleBar.Name     = "TitleBar"
-TitleBar.Parent   = Frame
-TitleBar.Size     = UDim2.new(1, 0, 0, 30)
-TitleBar.Position = UDim2.new(0, 0, 0, 0)
-TitleBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleBar.TextScaled = true
-TitleBar.AutoButtonColor = false
-TitleBar.Text     = "- SUMBING -"
-
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 12)
-TitleCorner.Parent = TitleBar
-
--- Container isi
-local Container   = Instance.new("ScrollingFrame")
-Container.Parent  = Frame
-Container.Size    = UDim2.new(1, 0, 1, -30)
-Container.Position= UDim2.new(0, 0, 0, 30)
-Container.BackgroundTransparency = 1
-Container.ScrollBarThickness = 6
-Container.CanvasSize = UDim2.new(0, 0, 0, 800)
-
--- Helper: bikin tombol rounded
-local function makeButton(parent, text, posY, height)
-    local btn = Instance.new("TextButton")
-    btn.Parent = parent
-    btn.Size   = UDim2.new(0, 200, 0, height or 35)
-    btn.Position = UDim2.new(0, 10, 0, posY)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 120)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextScaled = true
-    btn.Text = text
-    local c = Instance.new("UICorner", btn)
-    c.CornerRadius = UDim.new(0, 8)
-    return btn
 end
 
--- Label koordinat
-local CoordLabel = Instance.new("TextLabel")
-CoordLabel.Parent = Container
-CoordLabel.Size   = UDim2.new(0, 200, 0, 40)
-CoordLabel.Position = UDim2.new(0, 10, 0, 0)
-CoordLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-CoordLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-CoordLabel.TextScaled = true
-CoordLabel.Font = Enum.Font.Code
-CoordLabel.Text = "X: 0  Y: 0  Z: 0"
-Instance.new("UICorner", CoordLabel).CornerRadius = UDim.new(0, 8)
+local function tweenTeleport(x, y, z)
+    local char = LocalPlayer.Character
+    if not char then return end
+    local root = getRoot(char)
+    if not root then return end
 
-RunService.RenderStepped:Connect(function()
-    if hrp then
-        local p = hrp.Position
-        CoordLabel.Text = string.format("X: %.1f   Y: %.1f   Z: %.1f", p.X, p.Y, p.Z)
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.SeatPart then
+        humanoid.Sit = false
+        task.wait(0.1)
     end
-end)
 
--- Copy koordinat
-local CopyBtn = makeButton(Container, "Copy Koordinat", 45)
-CopyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-CopyBtn.MouseButton1Click:Connect(function()
-    if hrp then
-        local p = hrp.Position
-        setclipboard(string.format("%.1f, %.1f, %.1f", p.X, p.Y, p.Z))
+    TweenService:Create(
+        root,
+        TweenInfo.new(2, Enum.EasingStyle.Linear),
+        { CFrame = CFrame.new(x, y, z) }
+    ):Play()
+
+    breakVelocity(char)
+end
+
+local function tweenToPlayer(target)
+    if not target.Character or not getRoot(target.Character) then return end
+    local myChar = LocalPlayer.Character
+    if not myChar or not getRoot(myChar) then return end
+
+    local humanoid = myChar:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.SeatPart then
+        humanoid.Sit = false
+        task.wait(0.1)
     end
-end)
 
--- Checkpoints
-local checkpoints = {
-    [1] = Vector3.new(-225.5, 442.6, 2142.4),
-    [2] = Vector3.new(-427.7, 850.6, 3204.2),
-    [3] = Vector3.new(42.4, 1270.6, 4043.7),
-    [4] = Vector3.new(-1142.2, 1554.6, 4900.1),
-    [5] = Vector3.new(-718.1, 1940.7, 5333.3),
+    TweenService:Create(
+        getRoot(myChar),
+        TweenInfo.new(1.5, Enum.EasingStyle.Linear),
+        { CFrame = getRoot(target.Character).CFrame + Vector3.new(3, 1, 0) }
+    ):Play()
+
+    breakVelocity(myChar)
+end
+
+-- =========================
+-- Tab Shop
+-- =========================
+local ShopTab = Window:Tab({ Title = "Shop", Icon = "shopping-cart" })
+local ShopSection = ShopTab:Section({ Title = "Purchase Items", TextXAlignment = "Left", TextSize = 17 })
+
+-- Fungsi checkout item tunggal
+local function checkoutItem(name, price)
+    local args = {
+        [1] = {
+            [1] = { ["Name"] = name, ["Price"] = price }
+        }
+    }
+    game:GetService("ReplicatedStorage").Checkout:InvokeServer(unpack(args))
+end
+
+-- Tombol di Shop
+ShopSection:Button({ Title = "Buy Medkit ($20000)", Callback = function() checkoutItem("Medkit", 20000) end })
+ShopSection:Button({ Title = "Buy Magic Water ($8000)", Callback = function() checkoutItem("Magic Water", 8000) end })
+ShopSection:Button({ Title = "Buy Tree Branch ($2500)", Callback = function() checkoutItem("Tree Branch", 2500) end })
+ShopSection:Button({ Title = "Buy Machete ($65000)", Callback = function() checkoutItem("Machete", 65000) end })
+ShopSection:Button({ Title = "Buy Umbrella ($45000)", Callback = function() checkoutItem("Umbrella", 45000) end })
+ShopSection:Button({ Title = "Buy STMJ ($12000)", Callback = function() checkoutItem("STMJ", 12000) end })
+ShopSection:Button({ Title = "Buy Lighter ($3500)", Callback = function() checkoutItem("Lighter", 3500) end })
+
+-- =========================
+-- Tab Teleport
+-- =========================
+local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
+
+-- === Saved Positions ===
+local TeleportSection = TeleportTab:Section({ Title = "Saved Positions", TextXAlignment = "Left", TextSize = 17 })
+
+TeleportSection:Button({ Title = "Teleport Pos1", Callback = function() tweenTeleport(-226, 441, 2142) end })
+TeleportSection:Button({ Title = "Teleport Pos2", Callback = function() tweenTeleport(-428, 849, 3204) end })
+TeleportSection:Button({ Title = "Teleport Pos3", Callback = function() tweenTeleport(42, 1269, 4044) end })
+TeleportSection:Button({ Title = "Teleport Pos4", Callback = function() tweenTeleport(-1142, 1553, 4900) end })
+TeleportSection:Button({ Title = "Teleport Pos5", Callback = function() tweenTeleport(-877, 1954, 5357) end })
+
+-- === Teleport Player ===
+local PlayerSection = TeleportTab:Section({ Title = "Teleport Player", TextXAlignment = "Left", TextSize = 17 })
+local playerButtons = {}
+
+local function refreshPlayerList()
+    for _, btn in ipairs(playerButtons) do
+        btn:Destroy()
+    end
+    table.clear(playerButtons)
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local btn = PlayerSection:Button({
+                Title = plr.Name,
+                Callback = function() tweenToPlayer(plr) end
+            })
+            table.insert(playerButtons, btn)
+        end
+    end
+end
+
+-- Tambah tombol manual refresh
+PlayerSection:Button({
+    Title = "🔄 Refresh Player List",
+    Callback = function()
+        refreshPlayerList()
+    end
+})
+
+-- Load pertama kali
+refreshPlayerList()
+
+-- === Auto Teleport (perbaikan: pakai TeleportTab:Slider atau fallback) ===
+local AutoSection = TeleportTab:Section({ Title = "Auto Teleport", TextXAlignment = "Left", TextSize = 17 })
+
+local AutoTeleportEnabled = false
+local AutoTeleportTask = nil
+
+local minDelay, maxDelay = 1, 20
+local teleportDelay = 3 -- default detik
+
+local positions = {
+    CFrame.new(-226, 441, 2142),   -- Pos1
+    CFrame.new(-428, 849, 3204),   -- Pos2
+    CFrame.new(42, 1269, 4044),    -- Pos3
+    CFrame.new(-1142, 1553, 4900), -- Pos4
+    CFrame.new(-877, 1954, 5357)   -- Pos5
 }
 
-for i = 1, 5 do
-    local btn = makeButton(Container, "Teleport "..i, 90 + (i * 40))
-    btn.MouseButton1Click:Connect(function()
-        local pos = checkpoints[i]
-        if pos and hrp then
-            hrp.CFrame = CFrame.new(pos)
-        end
-    end)
+-- safe parser
+local function clampNum(n)
+    if type(n) == "number" then return math.clamp(n, minDelay, maxDelay) end
+    if type(n) == "string" then local v = tonumber(n) if v then return math.clamp(v, minDelay, maxDelay) end end
+    return nil
 end
 
--- Rejoin
-local RejoinBtn = makeButton(Container, "🔄 Rejoin Server", 370, 40)
-RejoinBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 50)
-RejoinBtn.MouseButton1Click:Connect(function()
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, plr)
+-- attempt create slider according to docs (Tab:Slider)
+local sliderObj = nil
+local ok, ret = pcall(function()
+    return TeleportTab:Slider({
+        Title = "Delay (detik)",
+        Step = 1,
+        Value = {
+            Min = minDelay,
+            Max = maxDelay,
+            Default = teleportDelay
+        },
+        Callback = function(val)
+            local v = clampNum(val)
+            if v then teleportDelay = v end
+        end
+    })
 end)
 
--- Restart Script (load ulang dari raw milikmu)
-local RestartBtn = makeButton(Container, "🔁 Restart Script", 420, 40)
-RestartBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 50)
-RestartBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy() -- bersihkan GUI lama
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/hakutakaid/z/refs/heads/master/sumbing.lua"))()
-end)
+if ok and ret then
+    sliderObj = ret
+else
+    -- fallback: buat display + +/- buttons (lebih aman kalau slider library bugg)
+    warn("Slider unavailable or caused error, using +/- fallback. (", tostring(ret), ")")
+    local displayBtn = AutoSection:Button({ Title = "Delay: " .. tostring(teleportDelay) .. "s", Callback = function() end })
 
--- Auto Run CP 1→5 (delay 3s), auto stop di 5
-local autoRun = false
-local AutoRunBtn = makeButton(Container, "▶ Auto Run", 470, 40)
-AutoRunBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 150)
+    AutoSection:Button({
+        Title = "Delay -",
+        Callback = function()
+            teleportDelay = math.max(minDelay, teleportDelay - 1)
+            if displayBtn and displayBtn.SetTitle then displayBtn:SetTitle("Delay: " .. tostring(teleportDelay) .. "s") end
+            if sliderObj and sliderObj.Set then pcall(function() sliderObj:Set(teleportDelay) end) end
+        end
+    })
+    AutoSection:Button({
+        Title = "Delay +",
+        Callback = function()
+            teleportDelay = math.min(maxDelay, teleportDelay + 1)
+            if displayBtn and displayBtn.SetTitle then displayBtn:SetTitle("Delay: " .. tostring(teleportDelay) .. "s") end
+            if sliderObj and sliderObj.Set then pcall(function() sliderObj:Set(teleportDelay) end) end
+        end
+    })
+end
 
-AutoRunBtn.MouseButton1Click:Connect(function()
-    if autoRun then return end
-    autoRun = true
-    AutoRunBtn.Text = "⏳ Running..."
-    task.spawn(function()
-        for i = 1, math.min(5, #checkpoints) do
-            if not autoRun then break end
-            if hrp and checkpoints[i] then
-                hrp.CFrame = CFrame.new(checkpoints[i])
+-- auto teleport loop (menunggu tween.Completed, bisa stop cepat)
+local function autoTeleportLoop()
+    local index = 1
+    while AutoTeleportEnabled do
+        local pos = positions[index]
+        local char = LocalPlayer.Character
+        local root = getRoot(char)
+
+        if (not char) or (not root) then
+            local okc, newChar = pcall(function() return LocalPlayer.CharacterAdded:Wait(5) end)
+            char = okc and newChar or char
+            root = getRoot(char)
+            if not root then task.wait(0.5) end
+        end
+
+        if char and root then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.SeatPart then
+                humanoid.Sit = false
+                task.wait(0.1)
             end
-            task.wait(3)
+
+            local tween = TweenService:Create(root, TweenInfo.new(2, Enum.EasingStyle.Linear), { CFrame = pos })
+            tween:Play()
+
+            local finished = false
+            local conn = tween.Completed:Connect(function() finished = true end)
+
+            while not finished and AutoTeleportEnabled do
+                task.wait(0.1)
+            end
+
+            if conn then conn:Disconnect() end
+            breakVelocity(char)
+
+            if not AutoTeleportEnabled then break end
+
+            local elapsed = 0
+            while elapsed < teleportDelay and AutoTeleportEnabled do
+                task.wait(0.1)
+                elapsed = elapsed + 0.1
+            end
         end
-        autoRun = false
-        AutoRunBtn.Text = "▶ Auto Run"
-    end)
-end)
 
--- Respawn
-local RespawnBtn = makeButton(Container, "❤️ Respawn", 520, 40)
-RespawnBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-RespawnBtn.MouseButton1Click:Connect(function()
-    local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
-    if hum then hum.Health = 0 end
-end)
-
--- Minimize toggle (konten disembunyikan, title tetap)
-local minimized = false
-TitleBar.MouseButton1Click:Connect(function()
-    -- klik = toggle minimize (double fungsi: title untuk drag juga)
-    minimized = not minimized
-    Container.Visible = not minimized
-    if minimized then
-        Frame.Size = UDim2.new(0, 230, 0, 30)
-        TitleBar.Text = "+ SUMBING -"
-    else
-        Frame.Size = UDim2.new(0, 230, 0, 470)
-        TitleBar.Text = "- SUMBING -"
+        index = index + 1
+        if index > #positions then index = 1 end
     end
-end)
+    AutoTeleportTask = nil
+end
 
--- DRAG via TitleBar (bukan seluruh frame)
-do
-    local dragging, dragInput, dragStart, startPos
-    local function update(input)
-        local delta = input.Position - dragStart
-        Frame.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
+AutoSection:Toggle({
+    Title = "Auto Teleport (Pos1 → Pos5)",
+    Default = false,
+    Callback = function(value)
+        if value then
+            if AutoTeleportTask then return end
+            AutoTeleportEnabled = true
+            AutoTeleportTask = task.spawn(autoTeleportLoop)
+        else
+            AutoTeleportEnabled = false
+        end
+    end
+})
+
+-- =========================
+-- Tab Misc
+-- =========================
+local MiscTab = Window:Tab({ Title = "Misc", Icon = "refresh-cw" })
+local MiscSection = MiscTab:Section({ Title = "Misc Actions", TextXAlignment = "Left", TextSize = 17 })
+
+MiscSection:Button({ Title = "Reset Character", Callback = function() game:GetService("ReplicatedStorage").ResetCharacter:FireServer(true) end })
+MiscSection:Button({ Title = "Respawn", Callback = function() game:GetService("ReplicatedStorage").ResetCharacter:FireServer(true) end })
+
+-- =========================
+-- Anti-Lag Toggle
+-- =========================
+local AntiLagEnabled = false
+local AntiLagConnection
+
+local function enableAntiLag()
+    if AntiLagEnabled then return end
+    AntiLagEnabled = true
+
+    if Terrain then
+        Terrain.WaterWaveSize = 0
+        Terrain.WaterWaveSpeed = 0
+        Terrain.WaterReflectance = 0
+        Terrain.WaterTransparency = 1
     end
 
-    TitleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = Frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    Lighting.FogStart = 9e9
+    settings().Rendering.QualityLevel = 1
 
-    TitleBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement
-        or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Material = Enum.Material.Plastic
+            v.Reflectance = 0
+        elseif v:IsA("Decal") then
+            v.Transparency = 1
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+            v.Lifetime = NumberRange.new(0)
         end
-    end)
+    end
 
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
+    for _, v in pairs(Lighting:GetDescendants()) do
+        if v:IsA("PostEffect") then
+            v.Enabled = false
         end
+    end
+
+    AntiLagConnection = workspace.DescendantAdded:Connect(function(child)
+        task.spawn(function()
+            if child:IsA("ForceField") or child:IsA("Sparkles") or child:IsA("Smoke") or child:IsA("Fire") or child:IsA("Beam") then
+                RunService.Heartbeat:Wait()
+                child:Destroy()
+            end
+        end)
     end)
 end
+
+local function disableAntiLag()
+    if not AntiLagEnabled then return end
+    AntiLagEnabled = false
+    if AntiLagConnection then
+        AntiLagConnection:Disconnect()
+        AntiLagConnection = nil
+    end
+    if Terrain then
+        Terrain.WaterTransparency = 0.3
+    end
+    Lighting.GlobalShadows = true
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+end
+
+MiscSection:Toggle({
+    Title = "Anti-Lag",
+    Default = false,
+    Callback = function(value)
+        if value then enableAntiLag() else disableAntiLag() end
+    end
+})
