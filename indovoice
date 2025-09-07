@@ -1,0 +1,17 @@
+while true do
+    local args = {
+    	2
+    }
+    game:GetService("Players").LocalPlayer.Character:WaitForChild("Fishing Rod (BETA)"):WaitForChild("Event"):WaitForChild("Run"):FireServer(unpack(args))
+    
+    local args = {
+        true
+    }
+    game:GetService("Players").LocalPlayer
+        .Character:WaitForChild("Fishing Rod (BETA)")
+        :WaitForChild("Event")
+        :WaitForChild("FishCatch")
+        :FireServer(unpack(args))
+
+    task.wait(1) -- jeda 1 detik
+end
