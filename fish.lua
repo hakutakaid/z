@@ -52,8 +52,8 @@ local AwaitTradeResponse = safeFind("RF/AwaitTradeResponse")
 -- ======================================
 local autoFishing = false
 local Config = {
-    LoopDelay = 1,
-    ReelIdleTime = 3,
+    LoopDelay = 0.7,
+    ReelIdleTime = 2.1,
     Direction = -0.75,
     Power = 0.99
 }
