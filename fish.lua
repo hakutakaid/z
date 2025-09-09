@@ -52,10 +52,10 @@ local AwaitTradeResponse = safeFind("RF/AwaitTradeResponse")
 -- ======================================
 local autoFishing = false
 local Config = {
-    LoopDelay = 0.7,
-    ReelIdleTime = 2.1,
+    LoopDelay = 0.8,
+    ReelIdleTime = 2.5,
     Direction = -0.75,
-    Power = 0.99
+    Power = 0.50
 }
 
 local function stopAll(animator)
