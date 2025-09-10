@@ -1,0 +1,97 @@
+-- DPad fix: camera-local vectors + Humanoid:Move(..., true)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+if not player then return end
+
+-- GUI parent: PlayerGui kalau ada, kalau nggak (executor) ke CoreGui
+local function getGuiParent()
+    local pg = player:FindFirstChild("PlayerGui")
+    if pg then return pg end
+    return game:GetService("CoreGui")
+end
+local guiParent = getGuiParent()
+
+-- tunggu char & humanoid
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid")
+
+-- buat ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DPadFixGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = guiParent
+
+local function makeBtn(name, pos, txt)
+    local b = Instance.new("TextButton")
+    b.Name = name
+    b.Size = UDim2.new(0,64,0,64)
+    b.Position = pos
+    b.AnchorPoint = Vector2.new(0,0)
+    b.Text = txt
+    b.TextScaled = true
+    b.BackgroundTransparency = 0.25
+    b.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    b.TextColor3 = Color3.new(1,1,1)
+    b.AutoButtonColor = false
+    b.Parent = screenGui
+    return b
+end
+
+-- layout kiri-bawah
+local baseX, baseY = 20, -180
+local up    = makeBtn("Up",    UDim2.new(0, baseX+64, 1, baseY), "↑")
+local left  = makeBtn("Left",  UDim2.new(0, baseX,    1, baseY+64), "←")
+local down  = makeBtn("Down",  UDim2.new(0, baseX+64, 1, baseY+64), "↓")
+local right = makeBtn("Right", UDim2.new(0, baseX+128,1, baseY+64), "→")
+
+-- state tombol
+local moving = { up=false, down=false, left=false, right=false }
+
+local function setState(k, v) moving[k] = v end
+
+local function bind(btn, name)
+    btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            setState(name, true)
+        end
+    end)
+    btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            setState(name, false)
+        end
+    end)
+    -- fallback mouse events
+    btn.MouseButton1Down:Connect(function() setState(name,true) end)
+    btn.MouseButton1Up:Connect(function() setState(name,false) end)
+end
+
+bind(up,"up")
+bind(down,"down")
+bind(left,"left")
+bind(right,"right")
+
+-- main loop: gunakan vektor lokal kamera (forward=(0,0,-1), right=(1,0,0)) lalu panggil humanoid:Move(..., true)
+RunService.RenderStepped:Connect(function()
+    if not humanoid or not humanoid.Parent then return end
+
+    local v = Vector3.new(0,0,0)
+    if moving.up    then v = v + Vector3.new(0,0,-1) end
+    if moving.down  then v = v + Vector3.new(0,0,1)  end
+    if moving.left  then v = v + Vector3.new(-1,0,0) end
+    if moving.right then v = v + Vector3.new(1,0,0)  end
+
+    if v.Magnitude > 0 then
+        local dir = v.Unit  -- normalisasi supaya diagonal tidak lebih cepat
+        humanoid:Move(dir, true) -- true = interpret as camera-local
+    else
+        humanoid:Move(Vector3.new(0,0,0), true)
+    end
+end)
+
+-- reconnect saat respawn
+player.CharacterAdded:Connect(function(c)
+    char = c
+    humanoid = char:WaitForChild("Humanoid")
+end)
