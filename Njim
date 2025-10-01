@@ -1,0 +1,103 @@
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local KohlRemote = ReplicatedStorage:WaitForChild("Kohl's Admin Source"):WaitForChild("Remote"):WaitForChild("Command")
+local CarryRemote = ReplicatedStorage:WaitForChild("CarryReplic"):WaitForChild("CarryRemotes"):WaitForChild("CarryRemote")
+local CarryChoices = ReplicatedStorage:WaitForChild("CarryReplic"):WaitForChild("CarryChoices")
+
+local function getNearestPlayer(maxDist)
+    local nearestPlr, nearestDist = nil, maxDist or 25
+    local myChar = LocalPlayer.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
+    local myPos = myChar.HumanoidRootPart.Position
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (plr.Character.HumanoidRootPart.Position - myPos).Magnitude
+            if dist < nearestDist then
+                nearestDist = dist
+                nearestPlr = plr
+            end
+        end
+    end
+    return nearestPlr
+end
+
+local function carryNearest()
+    local target = getNearestPlayer(25)
+    if target then
+        local args = {{
+            cmd = "AskCarry",
+            carrychoicesss = CarryChoices:WaitForChild("Piggyback"),
+            targetPlr = target
+        }}
+        CarryRemote:FireServer(unpack(args))
+    end
+end
+
+local function duplicateTanggaGerak()
+    local tanggaFolder = Workspace:FindFirstChild("tanggagerak")
+    if not tanggaFolder then return end
+    local originalLadders = {}
+    local clonedLadders = {}
+    for _, obj in ipairs(tanggaFolder:GetChildren()) do
+        if obj:IsA("BasePart") then
+            obj.Color = Color3.new(0, 0, 0)
+            table.insert(originalLadders, obj)
+        end
+    end
+    for _, ladder in ipairs(originalLadders) do
+        for j = 1, 1 do
+            local newLadder = ladder:Clone()
+            newLadder.Position = ladder.Position + Vector3.new(0, 0, j * 5)
+            newLadder.Transparency = 0.7
+            newLadder.CanCollide = true
+            newLadder.Parent = tanggaFolder
+            table.insert(clonedLadders, newLadder)
+        end
+    end
+end
+
+local Window = WindUI:CreateWindow({
+    Title = "Deva",
+    Icon = "terminal",
+    Author = "Delta",
+    Folder = "KohlsCmd",
+    Size = UDim2.fromOffset(400, 300)
+})
+
+local MainTab = Window:Tab({ Title = "Executor", Icon = "terminal" })
+local Section = MainTab:Section({ Title = "Command Sender" })
+
+Section:Input({
+    Title = "Command",
+    Description = "Contoh: fly | ping | title me Helper (slash otomatis)",
+    Placeholder = "Ketik command...",
+    Callback = function(value)
+        if value and value ~= "" then
+            local finalCmd = value
+            if not string.match(value, "^/") then
+                finalCmd = "/" .. value
+            end
+            local args = {finalCmd}
+            KohlRemote:FireServer(unpack(args))
+        end
+    end
+})
+
+Section:Button({
+    Title = "🤝 Carry Nearest",
+    Callback = function()
+        carryNearest()
+    end
+})
+
+Section:Button({
+    Title = "📑 Duplicate TanggaGerak",
+    Callback = function()
+        duplicateTanggaGerak()
+    end
+})

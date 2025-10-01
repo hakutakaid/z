@@ -1,0 +1,95 @@
+-- LocalScript -> StarterGui
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+
+-- Buat ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ModeGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui") -- penting!
+
+-- UI
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 150, 0, 40)
+button.Position = UDim2.new(0, 20, 0, 20)
+button.Text = "Mode OFF"
+button.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+button.TextColor3 = Color3.new(1,1,1)
+button.Active = true
+button.Selectable = true
+button.Parent = screenGui
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(0, 300, 0, 24)
+status.Position = UDim2.new(0, 20, 0, 70)
+status.BackgroundTransparency = 1
+status.Text = "Mode mati"
+status.TextColor3 = Color3.new(1,1,1)
+status.Parent = screenGui
+
+-- Drag variables
+local dragging = false
+local dragStart
+local startPos
+
+-- Drag function
+local function update(input)
+	local delta = input.Position - dragStart
+	button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	status.Position = UDim2.new(button.Position.X.Scale, button.Position.X.Offset, button.Position.Y.Scale, button.Position.Y.Offset + 60)
+end
+
+-- Start drag
+button.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = button.Position
+
+		-- Detect release
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+-- Update drag
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		update(input)
+	end
+end)
+
+-- Mode ON/OFF
+local modeOn = false
+button.MouseButton1Click:Connect(function()
+	modeOn = not modeOn
+	if modeOn then
+		button.Text = "Mode ON"
+		button.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		status.Text = "Mode aktif: injak untuk ubah Z"
+	else
+		button.Text = "Mode OFF"
+		button.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		status.Text = "Mode mati"
+	end
+end)
+
+-- Deteksi injak part
+local function setupCharacter(character)
+	local hrp = character:WaitForChild("HumanoidRootPart")
+	hrp.Touched:Connect(function(hit)
+		if hit and hit:IsA("BasePart") and modeOn then
+			local s = hit.Size
+			hit.Size = Vector3.new(s.X, s.Y, 2)
+			status.Text = "Z diubah: "..hit.Name
+		end
+	end)
+end
+
+-- Pertama kali jalan
+setupCharacter(player.Character or player.CharacterAdded:Wait())
+player.CharacterAdded:Connect(setupCharacter)

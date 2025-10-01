@@ -1,0 +1,51 @@
+=== Animations Report
+Generated: 2025-09-30 11:40:05
+
+Found 43 Animation instances:
+- Idle | rbxassetid://98168923097775 | Workspace/NPC/Scientist/Animations/Idle
+- Idle | rbxassetid://100479761518539 | Workspace/NPC/Alien Merchant/Animations/Idle
+- FishingRodReelIdle | rbxassetid://134965425664034 | Workspace/NPC/Silly Fisherman/Animations/FishingRodReelIdle
+- Emote | rbxassetid://113892097123931 | Workspace/NPC/Aura Kid/Animations/Emote
+- Idle | rbxassetid://100479761518539 | Workspace/NPC/Aura Kid/Animations/Idle
+- Idle | rbxassetid://100479761518539 | Workspace/NPC/Boat Expert/Animations/Idle
+- Sit | rbxassetid://119383377956726 | Workspace/NPC/Boat Expert/Animations/Sit
+- Idle | rbxassetid://100479761518539 | Workspace/NPC/Alex/Animations/Idle
+- Sit | rbxassetid://119383377956726 | Workspace/NPC/Alex/Animations/Sit
+- Idle | rbxassetid://100479761518539 | Workspace/NPC/Seth/Animations/Idle
+- Sit | rbxassetid://119383377956726 | Workspace/NPC/Seth/Animations/Sit
+- Idle | rbxassetid://100479761518539 | Workspace/NPC/Joe/Animations/Idle
+- Sit | rbxassetid://119383377956726 | Workspace/NPC/Joe/Animations/Sit
+- Idle | rbxassetid://100479761518539 | Workspace/NPC/Scott/Animations/Idle
+- Sit | rbxassetid://119383377956726 | Workspace/NPC/Scott/Animations/Sit
+- Idle | rbxassetid://100479761518539 | Workspace/NPC/Ron/Animations/Idle
+- HardFishReel | rbxassetid://110413869466904 | ReplicatedStorage/Modules/Animations/HardFishReel
+- RodThrow | rbxassetid://92624107165273 | ReplicatedStorage/Modules/Animations/RodThrow
+- EasyFishReelStart | rbxassetid://136614469321844 | ReplicatedStorage/Modules/Animations/EasyFishReelStart
+- EasyFishReel | rbxassetid://114959536562596 | ReplicatedStorage/Modules/Animations/EasyFishReel
+- ReelingIdle | rbxassetid://134965425664034 | ReplicatedStorage/Modules/Animations/ReelingIdle
+- Electric Guitar - EquipIdle | rbxassetid://108792932396384 | ReplicatedStorage/Modules/Animations/Electric Guitar - EquipIdle
+- HoldFish1 | rbxassetid://131771776568234 | ReplicatedStorage/Modules/Animations/HoldFish1
+- Electric Guitar - StartRodCharge | rbxassetid://108792932396384 | ReplicatedStorage/Modules/Animations/Electric Guitar - StartRodCharge
+- HoldFish2 | rbxassetid://75033370620947 | ReplicatedStorage/Modules/Animations/HoldFish2
+- HoldFish3 | rbxassetid://126738217543503 | ReplicatedStorage/Modules/Animations/HoldFish3
+- Holy Trident - StartRodCharge | rbxassetid://83219020397849 | ReplicatedStorage/Modules/Animations/Holy Trident - StartRodCharge
+- NPC_Emote | rbxassetid://113892097123931 | ReplicatedStorage/Modules/Animations/NPC_Emote
+- NPC_Leaning | rbxassetid://100479761518539 | ReplicatedStorage/Modules/Animations/NPC_Leaning
+- Holy Trident - EasyFishReel | rbxassetid://126831815839724 | ReplicatedStorage/Modules/Animations/Holy Trident - EasyFishReel
+- StartRodCharge | rbxassetid://139622307103608 | ReplicatedStorage/Modules/Animations/StartRodCharge
+- Holy Trident - EquipIdle | rbxassetid://83219020397849 | ReplicatedStorage/Modules/Animations/Holy Trident - EquipIdle
+- NPC_Sit | rbxassetid://119383377956726 | ReplicatedStorage/Modules/Animations/NPC_Sit
+- LoopedRodCharge | rbxassetid://137429009359442 | ReplicatedStorage/Modules/Animations/LoopedRodCharge
+- FishingFailure | rbxassetid://78824620552051 | ReplicatedStorage/Modules/Animations/FishingFailure
+- Holy Trident - EasyFishReelStart | rbxassetid://126831815839724 | ReplicatedStorage/Modules/Animations/Holy Trident - EasyFishReelStart
+- EquipIdleFake | rbxassetid://96586569072385 | ReplicatedStorage/Modules/Animations/EquipIdleFake
+- EquipIdle | rbxassetid://96586569072385 | ReplicatedStorage/Modules/Animations/EquipIdle
+- Holy Trident - FishCaught | rbxassetid://128167068291703 | ReplicatedStorage/Modules/Animations/Holy Trident - FishCaught
+- Holy Trident - RodThrow | rbxassetid://114917462794864 | ReplicatedStorage/Modules/Animations/Holy Trident - RodThrow
+- Holy Trident - ReelingIdle | rbxassetid://126831815839724 | ReplicatedStorage/Modules/Animations/Holy Trident - ReelingIdle
+- FishCaught | rbxassetid://117319000848286 | ReplicatedStorage/Modules/Animations/FishCaught
+- IdleAnimation | rbxassetid://70775247716954 | ReplicatedStorage/Passives/Ghoul Rod/IdleAnimation
+
+Found 0 potential AnimationId strings (StringValue/ModuleScript/...):
+
+Found 0 LocalScript/ModuleScript snippets calling LoadAnimation:

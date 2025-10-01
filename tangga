@@ -1,0 +1,40 @@
+local Workspace = game:GetService("Workspace")
+local tanggaFolder = Workspace:FindFirstChild("tanggagerak")
+
+if tanggaFolder then
+    local originalLadders = {} -- simpan tangga asli
+    local clonedLadders = {} -- simpan clone
+
+    for _, obj in ipairs(tanggaFolder:GetChildren()) do
+        if obj:IsA("BasePart") then
+            table.insert(originalLadders, obj)
+        end
+    end
+
+    -- Duplicate semua tangga asli
+    for _, ladder in ipairs(originalLadders) do
+        for j = 1, 3 do -- duplicate 3 kali setiap tangga
+            local newLadder = ladder:Clone()
+            newLadder.Position = ladder.Position + Vector3.new(0, 0, j * 5)
+            newLadder.Transparency = 0.7 -- clone transparan (0.5 setengah, 1 full invisible)
+            newLadder.CanCollide = true  -- biar tetap bisa dipanjat
+            newLadder.Parent = tanggaFolder
+            table.insert(clonedLadders, newLadder)
+        end
+    end
+
+    -- Hentikan gerakan hanya pada clone
+    for _, ladder in ipairs(clonedLadders) do
+        for _, child in ipairs(ladder:GetChildren()) do
+            if child:IsA("Script") or child:IsA("LocalScript") or
+               child:IsA("BodyPosition") or child:IsA("BodyVelocity") or child:IsA("BodyGyro") then
+                child:Destroy()
+            end
+        end
+
+        if ladder:IsA("BasePart") then
+            ladder.Velocity = Vector3.new(0,0,0)
+            ladder.RotVelocity = Vector3.new(0,0,0)
+        end
+    end
+end
