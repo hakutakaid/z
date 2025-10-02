@@ -159,7 +159,7 @@ do
     ControlTab:Slider({
         Title = "Atur Delay Klik",
         Desc = "Mengatur jeda waktu saat menggulung ikan (detik).",
-        Value = { Min = 0.05, Max = 5, Default = config.currentDelay },
+        Value = { Min = 0.05, Max = 0.5, Default = config.currentDelay },
         Step = 0.01, -- Tingkat presisi slider
         Callback = function(value)
             config.currentDelay = value -- Simpan nilai baru dari slider
