@@ -1,11 +1,3 @@
---[[
--- Auto Fish + Auto-handle FishCaught (Android / Delta)
--- Versi Final dengan Slider Delay yang Fungsional & Auto Jual
-]]
-
---================================================================
---[[ Services & Pustaka ]]
---================================================================
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -15,26 +7,19 @@ local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
--- Hapus GUI lama jika ada
 if game:GetService("CoreGui"):FindFirstChild("AutoFishCerdas_WindUI") then
     game:GetService("CoreGui").AutoFishCerdas_WindUI:Destroy()
 end
 
---================================================================
---[[ Konfigurasi ]]
---================================================================
 local config = {
     remoteFolderName = "Remotes",
     remoteEventName = "Fish",
     castTimeout = 15,
     reelTimeout = 10,
     autoSellInterval = 20,
-    currentDelay = 0.1 -- Nilai delay default, akan diatur oleh slider
+    currentDelay = 0.1
 }
 
---================================================================
---[[ State & Variabel ]]
---================================================================
 local Remotes = ReplicatedStorage:WaitForChild(config.remoteFolderName)
 local FishRemote = Remotes:WaitForChild(config.remoteEventName)
 
@@ -42,16 +27,38 @@ local autoFishEnabled = false
 local autoSellEnabled = false
 local lastCaughtArgs = nil
 local lastStateChange = 0
-local lastClickTime = 0 -- Variabel baru untuk mengatur kecepatan klik
+local lastClickTime = 0
 local statusElement = nil
 
--- State Machine
 local State = { IDLE = "IDLE", CASTING = "CASTING", WAITING = "WAITING", REELING = "REELING" }
 local currentState = State.IDLE
 
---================================================================
---[[ Fungsi Helper & Loop ]]
---================================================================
+local teleportLocations = {
+	["Catcher's Camp"] = "Special",
+	["Shobati"] = "Catcher's Camp",
+	["Scuba Joe"] = "Shobati",
+	["Shipwreck Bay"] = "Scuba Joe",
+	["Great Vine"] = "Shipwreck Bay",
+	["Ice Island"] = "Great Vine",
+	["Lava Island"] = "Ice Island",
+	["Fishman Island"] = "Special",
+	["Sky Island"] = "Special"
+}
+
+local function teleportTo(locationName)
+    pcall(function()
+        local character = player.Character
+        local spawnPoint = workspace.Items.SpawnPoints:FindFirstChild(locationName)
+        
+        if character and spawnPoint then
+            character:PivotTo(spawnPoint.CFrame + Vector3.new(0, 3, 0))
+            WindUI:Notify({ Title = "Teleport Berhasil", Content = "Anda telah dipindahkan ke " .. locationName })
+        else
+            WindUI:Notify({ Title = "Teleport Gagal", Content = "Lokasi " .. locationName .. " tidak ditemukan." })
+        end
+    end)
+end
+
 local function click_at(x, y)
     pcall(function()
         VirtualUser:CaptureController()
@@ -105,10 +112,9 @@ RunService.Heartbeat:Connect(function(deltaTime)
     elseif currentState == State.WAITING and currentTime - lastStateChange > config.castTimeout then
         setState(State.CASTING)
     elseif currentState == State.REELING then
-        -- [LOGIKA DELAY BARU] Hanya klik jika sudah melewati waktu delay
         if currentTime - lastClickTime > config.currentDelay then
             click_at(cx, cy)
-            lastClickTime = currentTime -- Atur ulang timer klik
+            lastClickTime = currentTime
         end
         if currentTime - lastStateChange > config.reelTimeout then
             setState(State.CASTING)
@@ -129,16 +135,13 @@ local function autoSellLoop()
     end
 end
 
---================================================================
---[[ UI (WindUI) ]]
---================================================================
 local Window = WindUI:CreateWindow({
-    Title = "AutoFish Cerdas",
-    Size = UDim2.fromOffset(350, 450), -- Ukuran window disesuaikan
+    Title = "AutoFish Cerdas v2",
+    Size = UDim2.fromOffset(350, 480),
     OpenButton = { Title = "Open Auto Fish", Enabled = true }
 })
 
-local MainSection = Window:Section({ Title = "Kontrol Utama" })
+local MainSection = Window:Section({ Title = "Fitur" })
 
 do
     local ControlTab = MainSection:Tab({ Title = "Otomatisasi", Icon = "flame" })
@@ -155,14 +158,13 @@ do
         end
     })
 
-    --- [ TOMBOL DELAY DIGANTI DENGAN SLIDER DI SINI ] ---
     ControlTab:Slider({
         Title = "Atur Delay Klik",
         Desc = "Mengatur jeda waktu saat menggulung ikan (detik).",
         Value = { Min = 0.05, Max = 0.5, Default = config.currentDelay },
-        Step = 0.01, -- Tingkat presisi slider
+        Step = 0.01,
         Callback = function(value)
-            config.currentDelay = value -- Simpan nilai baru dari slider
+            config.currentDelay = value
             WindUI:Notify({ 
                 Title = "Delay Diubah", 
                 Content = string.format("Delay klik sekarang: %.2f detik", value)
@@ -198,4 +200,17 @@ do
             end
         end
     })
+
+    local TeleportTab = MainSection:Tab({ Title = "Teleportasi", Icon = "map-pin" })
+    TeleportTab:Paragraph({ Title = "Pindah Lokasi", Desc = "Klik tombol untuk teleport ke lokasi yang dipilih secara instan." })
+    TeleportTab:Divider()
+    
+    for locationName, _ in pairs(teleportLocations) do
+        TeleportTab:Button({
+            Title = locationName,
+            Callback = function()
+                teleportTo(locationName)
+            end
+        })
+    end
 end
