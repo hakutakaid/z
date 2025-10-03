@@ -177,7 +177,7 @@ local function autoSellLoop()
 end
 
 local Window = WindUI:CreateWindow({
-    Title = "AutoFish Cerdas v2.4",
+    Title = "AutoFish Cerdas v2.5",
     Size = UDim2.fromOffset(350, 480),
     OpenButton = { Title = "Open Auto Fish", Enabled = true }
 })
@@ -280,20 +280,38 @@ do
         })
     end
 
-    -- [[ BARU: Tab Teleport Player ]]
-    local PlayerTeleportTab = MainSection:Tab({ Title = "Teleport Player", Icon = "user-check" })
-    local playerButtons = {}
-    local function refreshPlayerList()
-        -- Hapus tombol lama
-        for _, button in ipairs(playerButtons) do
-            pcall(function() button:Destroy() end)
-        end
-        playerButtons = {}
+    -- [[ BAGIAN YANG DIPERBARUI: Logika Refresh Player yang Benar ]]
+    local playerTeleportTab = nil -- Variabel untuk menyimpan objek Tab agar bisa dihancurkan
 
-        -- Buat tombol baru untuk setiap player
+    local function buildPlayerTeleportTab()
+        -- Jika tab sudah ada, hancurkan yang lama sebelum membuat yang baru
+        -- Pengecekan .Object dan .Parent memastikan kita tidak error jika sudah dihancurkan
+        if playerTeleportTab and playerTeleportTab.Object and playerTeleportTab.Object.Parent then
+            pcall(function()
+                playerTeleportTab.Object:Destroy()
+            end)
+        end
+
+        -- Buat ulang tab dari awal
+        playerTeleportTab = MainSection:Tab({ Title = "Teleport Player", Icon = "user-check" })
+
+        -- Tambahkan tombol Refresh di tab yang baru
+        playerTeleportTab:Button({
+            Title = "Refresh List",
+            Desc = "Memuat ulang daftar pemain di server.",
+            Icon = "refresh-cw",
+            Color = Color3.fromHex("#38bdf8"),
+            Callback = function()
+                buildPlayerTeleportTab() -- Panggil fungsi ini lagi untuk membangun ulang seluruh tab
+                WindUI:Notify({ Title = "Player List", Content = "Daftar pemain telah diperbarui."})
+            end
+        })
+        playerTeleportTab:Divider()
+
+        -- Buat tombol untuk setiap pemain yang ada di server
         for _, targetPlayer in ipairs(Players:GetPlayers()) do
             if targetPlayer ~= player then -- Jangan tampilkan diri sendiri
-                local newButton = PlayerTeleportTab:Button({
+                playerTeleportTab:Button({
                     Title = targetPlayer.DisplayName,
                     Desc = "Teleport ke player " .. targetPlayer.Name,
                     Callback = function()
@@ -310,20 +328,11 @@ do
                         end)
                     end
                 })
-                table.insert(playerButtons, newButton)
             end
         end
     end
-
-    PlayerTeleportTab:Button({
-        Title = "Refresh List",
-        Desc = "Memuat ulang daftar pemain di server.",
-        Icon = "refresh-cw",
-        Color = Color3.fromHex("#38bdf8"),
-        Callback = refreshPlayerList
-    })
-    PlayerTeleportTab:Divider()
-    refreshPlayerList() -- Panggil fungsi sekali untuk memuat daftar saat pertama kali dibuka
+    
+    buildPlayerTeleportTab() -- Panggil fungsi ini untuk membangun tab saat skrip pertama kali dijalankan
 
     local MiscTab = MainSection:Tab({ Title = "MISC", Icon = "trash-2" })
     MiscTab:Paragraph({ Title = "Fitur Lain-lain", Desc = "Berisi berbagai fungsi tambahan." })
