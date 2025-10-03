@@ -45,6 +45,19 @@ local teleportLocations = {
 	["Sky Island"] = "Special"
 }
 
+local npcList = {
+    "Mermaid", "Pablo", "James", "Merchant", "Xavier", "Scared", "Paul", "Pirate", 
+    "Shipwright", "Simon", "Sally", "Theo", "Appraiser", "Scientist", "Map", 
+    "Shipwright2", "Shipwright4", "Shipwright3", "Random2", "BoatMerchant", "Zack", 
+    "Retired Catcher", "Captain", "John", "Rob", "Shipwright5", "George", "Jimmy", 
+    "Medea", "Samantha", "Theseus", "Althea", "Danny", "Ramy", "Pam", "Farmer", 
+    "RodSeller", "Steve", "Bobby", "Banny", "Catcher's Camp", "Fishman Island", "Great Vine"
+}
+table.sort(npcList)
+
+local questItems = {"Pearl1", "Pearl2", "Pearl3", "Pearl4", "Pearl5"}
+
+
 local function teleportTo(locationName)
     pcall(function()
         local character = player.Character
@@ -55,6 +68,34 @@ local function teleportTo(locationName)
             WindUI:Notify({ Title = "Teleport Berhasil", Content = "Anda telah dipindahkan ke " .. locationName })
         else
             WindUI:Notify({ Title = "Teleport Gagal", Content = "Lokasi " .. locationName .. " tidak ditemukan." })
+        end
+    end)
+end
+
+local function teleportToNpc(npcName)
+    pcall(function()
+        local character = player.Character
+        local npcModel = workspace.NPC:FindFirstChild(npcName)
+        
+        if character and npcModel and npcModel:FindFirstChild("HumanoidRootPart") then
+            character:PivotTo(npcModel.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
+            WindUI:Notify({ Title = "Teleport Berhasil", Content = "Anda telah dipindahkan ke " .. npcName })
+        else
+            WindUI:Notify({ Title = "Teleport Gagal", Content = "NPC " .. npcName .. " tidak ditemukan atau tidak valid." })
+        end
+    end)
+end
+
+local function teleportToItem(itemName)
+    pcall(function()
+        local character = player.Character
+        local item = workspace.Items.Quests:FindFirstChild(itemName)
+        
+        if character and item then
+            character:PivotTo(item.CFrame + Vector3.new(0, 3, 0))
+            WindUI:Notify({ Title = "Teleport Berhasil", Content = "Anda telah dipindahkan ke " .. itemName })
+        else
+            WindUI:Notify({ Title = "Teleport Gagal", Content = "Item " .. itemName .. " tidak ditemukan." })
         end
     end)
 end
@@ -136,7 +177,7 @@ local function autoSellLoop()
 end
 
 local Window = WindUI:CreateWindow({
-    Title = "AutoFish Cerdas v2",
+    Title = "AutoFish Cerdas v2.4",
     Size = UDim2.fromOffset(350, 480),
     OpenButton = { Title = "Open Auto Fish", Enabled = true }
 })
@@ -213,4 +254,92 @@ do
             end
         })
     end
+    
+    TeleportTab:Divider()
+    TeleportTab:Paragraph({ Title = "Item Quest", Desc = "Teleport ke lokasi item quest." })
+    
+    for _, itemName in ipairs(questItems) do
+        TeleportTab:Button({
+            Title = itemName,
+            Callback = function()
+                teleportToItem(itemName)
+            end
+        })
+    end
+
+    local NpcTeleportTab = MainSection:Tab({ Title = "Teleport NPC", Icon = "users" })
+    NpcTeleportTab:Paragraph({ Title = "Pindah ke NPC", Desc = "Klik tombol untuk teleport ke NPC yang dipilih." })
+    NpcTeleportTab:Divider()
+    
+    for _, npcName in ipairs(npcList) do
+        NpcTeleportTab:Button({
+            Title = npcName,
+            Callback = function()
+                teleportToNpc(npcName)
+            end
+        })
+    end
+
+    -- [[ BARU: Tab Teleport Player ]]
+    local PlayerTeleportTab = MainSection:Tab({ Title = "Teleport Player", Icon = "user-check" })
+    local playerButtons = {}
+    local function refreshPlayerList()
+        -- Hapus tombol lama
+        for _, button in ipairs(playerButtons) do
+            pcall(function() button:Destroy() end)
+        end
+        playerButtons = {}
+
+        -- Buat tombol baru untuk setiap player
+        for _, targetPlayer in ipairs(Players:GetPlayers()) do
+            if targetPlayer ~= player then -- Jangan tampilkan diri sendiri
+                local newButton = PlayerTeleportTab:Button({
+                    Title = targetPlayer.DisplayName,
+                    Desc = "Teleport ke player " .. targetPlayer.Name,
+                    Callback = function()
+                        pcall(function()
+                            local myCharacter = player.Character
+                            local targetCharacter = targetPlayer.Character
+                            if myCharacter and targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart") then
+                                local targetCFrame = targetCharacter.HumanoidRootPart.CFrame
+                                myCharacter:PivotTo(targetCFrame + Vector3.new(0, 3, 0))
+                                WindUI:Notify({ Title = "Teleport Sukses", Content = "Berhasil teleport ke " .. targetPlayer.DisplayName })
+                            else
+                                WindUI:Notify({ Title = "Teleport Gagal", Content = "Player tidak ditemukan atau karakternya tidak valid." })
+                            end
+                        end)
+                    end
+                })
+                table.insert(playerButtons, newButton)
+            end
+        end
+    end
+
+    PlayerTeleportTab:Button({
+        Title = "Refresh List",
+        Desc = "Memuat ulang daftar pemain di server.",
+        Icon = "refresh-cw",
+        Color = Color3.fromHex("#38bdf8"),
+        Callback = refreshPlayerList
+    })
+    PlayerTeleportTab:Divider()
+    refreshPlayerList() -- Panggil fungsi sekali untuk memuat daftar saat pertama kali dibuka
+
+    local MiscTab = MainSection:Tab({ Title = "MISC", Icon = "trash-2" })
+    MiscTab:Paragraph({ Title = "Fitur Lain-lain", Desc = "Berisi berbagai fungsi tambahan." })
+    MiscTab:Divider()
+
+    MiscTab:Button({
+        Title = "Hapus Flag",
+        Desc = "Menghapus semua objek bernama 'Flag' di dalam game.",
+        Callback = function()
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj.Name == "Flag" then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+            print("Selesai: semua objek bernama 'Flag' dihancurkan.")
+            WindUI:Notify({ Title = "Operasi Selesai", Content = "Semua 'Flag' telah berhasil dihapus." })
+        end
+    })
 end
