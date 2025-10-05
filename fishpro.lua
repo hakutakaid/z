@@ -81,9 +81,6 @@ local CUSTOM_TELEPORT_LOCATIONS = {
     ["Door Secret"] = CFrame.new(-3098.8677, -741.0842, -334.6655, 0.9961, 0.0263, -0.0842, 0.0001, 0.9545, 0.2984, 0.0882, -0.2972, 0.9507)
 }
 
-local NPC_LIST = {"Mermaid", "Pablo", "James", "Merchant", "Xavier", "Scared", "Paul", "Pirate", "Shipwright", "Simon", "Sally", "Theo", "Appraiser", "Scientist", "Map", "Shipwright2", "Shipwright4", "Shipwright3", "Random2", "BoatMerchant", "Zack", "Retired Catcher", "Captain", "John", "Rob", "Shipwright5", "George", "Jimmy", "Medea", "Samantha", "Theseus", "Althea", "Danny", "Ramy", "Pam", "Farmer", "RodSeller", "Steve", "Bobby", "Banny", "Catcher's Camp", "Fishman Island", "Great Vine"}
-table.sort(NPC_LIST)
-
 local QUEST_ITEMS = { "Pearl1", "Pearl2", "Pearl3", "Pearl4", "Pearl5" }
 
 -- Helper Functions
@@ -361,7 +358,19 @@ end
 
 local function createTeleportTab(parent)
     local tab = parent:Tab({Title = "Teleportasi", Icon = "map-pin"})
-    
+    local function getDynamicNpcList()
+        local npcNames = {}
+        if workspace:FindFirstChild("NPC") then
+            for _, npcModel in ipairs(workspace.NPC:GetChildren()) do
+                if npcModel:IsA("Model") and npcModel:FindFirstChild("HumanoidRootPart") then
+                    table.insert(npcNames, npcModel.Name)
+                end
+            end
+        end
+        table.sort(npcNames)
+        return npcNames
+    end
+
     local locNames = {}
     for name in pairs(TELEPORT_LOCATIONS) do table.insert(locNames, name) end
     table.sort(locNames)
@@ -370,9 +379,16 @@ local function createTeleportTab(parent)
     tab:Button({Title = "Teleport ke Lokasi", Callback = function() teleportToLocation(selectedLocation) end})
     tab:Divider()
 
-    local selectedNpc = NPC_LIST[1]
-    tab:Dropdown({Title = "Pilih NPC", Values = NPC_LIST, Value = selectedNpc, Callback = function(val) selectedNpc = val end})
-    tab:Button({Title = "Teleport ke NPC", Callback = function() teleportToNpc(selectedNpc) end})
+    local npcList = getDynamicNpcList()
+    local selectedNpc = #npcList > 0 and npcList[1] or nil
+    tab:Dropdown({Title = "Pilih NPC", Values = npcList, Value = selectedNpc, Callback = function(val) selectedNpc = val end})
+    tab:Button({Title = "Teleport ke NPC", Callback = function()
+        if selectedNpc then
+            teleportToNpc(selectedNpc)
+        else
+            notify("Gagal", "Tidak ada NPC yang dipilih atau ditemukan.")
+        end
+    end})
     tab:Divider()
 
     local customNames = {}
