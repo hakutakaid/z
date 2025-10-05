@@ -1,567 +1,647 @@
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
 
-local player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
-local PlayerGui = player:WaitForChild("PlayerGui")
-
-if game:GetService("CoreGui"):FindFirstChild("AutoFishCerdas_WindUI") then
-    game:GetService("CoreGui").AutoFishCerdas_WindUI:Destroy()
-end
-
-local config = {
-    remoteFolderName = "Remotes",
-    remoteEventName = "Fish",
-    castTimeout = 15,
-    reelTimeout = 10,
-    autoSellInterval = 20,
-    currentDelay = 0.3
+-- Services
+local SERVICES = {
+    ReplicatedStorage = game:GetService("ReplicatedStorage"),
+    Players = game:GetService("Players"),
+    RunService = game:GetService("RunService"),
+    VirtualUser = game:GetService("VirtualUser"),
+    CoreGui = game:GetService("CoreGui")
 }
 
-local Remotes = ReplicatedStorage:WaitForChild(config.remoteFolderName)
-local FishRemote = Remotes:WaitForChild(config.remoteEventName)
-local QuestRemote = Remotes:WaitForChild("Quest")
+-- Player Data
+local LOCAL_PLAYER = SERVICES.Players.LocalPlayer
+local PLAYER_GUI = LOCAL_PLAYER:WaitForChild("PlayerGui")
+local CAMERA = workspace.CurrentCamera
 
-local autoFishEnabled, autoSellEnabled, lastCaughtArgs, lastStateChange, lastClickTime, statusElement = false, false, nil, 0, 0, nil
-local hideGuiEnabled, hideGuiConnection = false, nil
-local autoQuestEnabled = false
-local crateOpeningDelay = 0.3
-local autoOpenBasic, autoOpenAdvanced, autoOpenDivine, autoOpenCelestial = false, false, false, false
+-- Configuration
+local CONFIG = {
+    RemoteFolderName = "Remotes",
+    RemoteEventName = "Fish",
+    CastTimeout = 15,
+    ReelTimeout = 10,
+    AutoSellInterval = 20,
+    ClickDelay = 0.3,
+    CrateOpeningDelay = 0.3
+}
 
+-- Remotes
+local REMOTES = SERVICES.ReplicatedStorage:WaitForChild(CONFIG.RemoteFolderName)
+local FISH_REMOTE = REMOTES:WaitForChild(CONFIG.RemoteEventName)
+local QUEST_REMOTE = REMOTES:WaitForChild("Quest")
+
+-- State Management
 local State = { IDLE = "IDLE", CASTING = "CASTING", WAITING = "WAITING", REELING = "REELING" }
 local currentState = State.IDLE
 
-local teleportLocations = {["Catcher's Camp"] = "Special", ["Shobati"] = "Catcher's Camp", ["Scuba Joe"] = "Shobati", ["Shipwreck Bay"] = "Scuba Joe", ["Great Vine"] = "Shipwreck Bay", ["Ice Island"] = "Great Vine", ["Lava Island"] = "Ice Island", ["Fishman Island"] = "Special", ["Sky Island"] = "Special"}
-local npcList = {"Mermaid", "Pablo", "James", "Merchant", "Xavier", "Scared", "Paul", "Pirate", "Shipwright", "Simon", "Sally", "Theo", "Appraiser", "Scientist", "Map", "Shipwright2", "Shipwright4", "Shipwright3", "Random2", "BoatMerchant", "Zack", "Retired Catcher", "Captain", "John", "Rob", "Shipwright5", "George", "Jimmy", "Medea", "Samantha", "Theseus", "Althea", "Danny", "Ramy", "Pam", "Farmer", "RodSeller", "Steve", "Bobby", "Banny", "Catcher's Camp", "Fishman Island", "Great Vine"}
-table.sort(npcList)
-local questItems = { "Pearl1", "Pearl2", "Pearl3", "Pearl4", "Pearl5" }
-local customTeleportLocations = {["Enchant Rod"] = CFrame.new(-7032.4956, 51.5197, 310.6900, 0.1352, 0.0000, 0.9908, 0.0000, 1.0000, -0.0000, -0.9908, 0.0000, 0.1352), ["Abyss Secret"] = CFrame.new(-1474.0933, -1601.8058, 344.1434, -0.5192, 0.0000, -0.8547, -0.0000, 1.0000, 0.0000, 0.8547, 0.0000, -0.5192), ["Mahi Spot"] = CFrame.new(1450.7202, 4.2160, -1517.4034, -0.7036, 0.0000, -0.7106, 0.0000, 1.0000, -0.0000, 0.7106, -0.0000, -0.7036), ["Blue Tang Spot"] = CFrame.new(-3654.2112, -1.5234, -9.4238, -0.9745, -0.0000, 0.2242, -0.0000, 1.0000, 0.0000, -0.2242, 0.0000, -0.9745)}
+local state = {
+    autoFishEnabled = false,
+    autoSellEnabled = false,
+    autoQuestEnabled = false,
+    autoOpenActive = false,
+    autoEnchantActive = false,
+    isGuiHidden = true,
+    lastCaughtArgs = nil,
+    lastStateChange = 0,
+    lastClickTime = 0,
+    lastReceivedEnchant = nil,
+    selectedCrate = "Basic Crate",
+    targetEnchant = "Mighty",
+    selectedArtifact = "Regular Artifact"
+}
 
-local function teleportTo(locationName) pcall(function() local char=player.Character; local sp=workspace.Items.SpawnPoints:FindFirstChild(locationName); if char and sp then char:PivotTo(sp.CFrame+Vector3.new(0,3,0)); WindUI:Notify({Title="Teleport Berhasil",Content="Pindah ke "..locationName}) else WindUI:Notify({Title="Teleport Gagal",Content="Lokasi "..locationName.." tidak ada."}) end end) end
-local function teleportToCFrame(targetCFrame, locationName) pcall(function() local char=player.Character; if char and char:FindFirstChild("HumanoidRootPart") then char:PivotTo(targetCFrame); WindUI:Notify({Title="Teleport Berhasil",Content="Pindah ke "..locationName}) else WindUI:Notify({Title="Teleport Gagal",Content="Karakter tidak ditemukan."}) end end) end
-local function teleportToNpc(npcName) pcall(function() local char=player.Character; local npc=workspace.NPC:FindFirstChild(npcName); if char and npc and npc:FindFirstChild("HumanoidRootPart") then char:PivotTo(npc.HumanoidRootPart.CFrame+Vector3.new(0,3,0)); WindUI:Notify({Title="Teleport Berhasil",Content="Pindah ke "..npcName}) else WindUI:Notify({Title="Teleport Gagal",Content="NPC "..npcName.." tidak ada."}) end end) end
-local function teleportToItem(itemName) pcall(function() local char=player.Character; local item=workspace.Items.Quests:FindFirstChild(itemName); if char and item then char:PivotTo(item.CFrame+Vector3.new(0,3,0)); WindUI:Notify({Title="Teleport Berhasil",Content="Pindah ke "..itemName}) else WindUI:Notify({Title="Teleport Gagal",Content="Item "..itemName.." tidak ada."}) end end) end
-local function click_at(x,y) pcall(function() VirtualUser:CaptureController(); VirtualUser:Button1Down(Vector2.new(x,y)); task.wait(); VirtualUser:Button1Up(Vector2.new(x,y)) end) end
-local function getCenterXY() return camera.ViewportSize.X/2, camera.ViewportSize.Y/2 end
-local function setState(newState) if currentState~=newState then currentState=newState; lastStateChange=tick(); if statusElement then statusElement:SetTitle("Status: "..currentState) end end end
+-- UI Elements
+local uiElements = {
+    status = nil,
+    autoEnchantToggle = nil
+}
 
+if SERVICES.CoreGui:FindFirstChild("AutoFishCerdas_WindUI") then
+    SERVICES.CoreGui.AutoFishCerdas_WindUI:Destroy()
+end
+
+-- Data Tables
+local TELEPORT_LOCATIONS = {
+    ["Catcher's Camp"] = "Special",
+    ["Shobati"] = "Catcher's Camp",
+    ["Scuba Joe"] = "Shobati",
+    ["Shipwreck Bay"] = "Scuba Joe",
+    ["Great Vine"] = "Shipwreck Bay",
+    ["Ice Island"] = "Great Vine",
+    ["Lava Island"] = "Ice Island",
+    ["Fishman Island"] = "Special",
+    ["Sky Island"] = "Special"
+}
+
+local CUSTOM_TELEPORT_LOCATIONS = {
+    ["Enchant Rod"] = CFrame.new(-7032.4956, 51.5197, 310.6900, 0.1352, 0.0000, 0.9908, 0.0000, 1.0000, -0.0000, -0.9908, 0.0000, 0.1352),
+    ["Abyss Secret"] = CFrame.new(-1474.0933, -1601.8058, 344.1434, -0.5192, 0.0000, -0.8547, -0.0000, 1.0000, 0.0000, 0.8547, 0.0000, -0.5192),
+    ["Mahi Spot"] = CFrame.new(1450.7202, 4.2160, -1517.4034, -0.7036, 0.0000, -0.7106, 0.0000, 1.0000, -0.0000, 0.7106, -0.0000, -0.7036),
+    ["Blue Tang Spot"] = CFrame.new(-3654.2112, -1.5234, -9.4238, -0.9745, -0.0000, 0.2242, -0.0000, 1.0000, 0.0000, -0.2242, 0.0000, -0.9745),
+    ["Door Secret"] = CFrame.new(-3098.8677, -741.0842, -334.6655, 0.9961, 0.0263, -0.0842, 0.0001, 0.9545, 0.2984, 0.0882, -0.2972, 0.9507)
+}
+
+local NPC_LIST = {"Mermaid", "Pablo", "James", "Merchant", "Xavier", "Scared", "Paul", "Pirate", "Shipwright", "Simon", "Sally", "Theo", "Appraiser", "Scientist", "Map", "Shipwright2", "Shipwright4", "Shipwright3", "Random2", "BoatMerchant", "Zack", "Retired Catcher", "Captain", "John", "Rob", "Shipwright5", "George", "Jimmy", "Medea", "Samantha", "Theseus", "Althea", "Danny", "Ramy", "Pam", "Farmer", "RodSeller", "Steve", "Bobby", "Banny", "Catcher's Camp", "Fishman Island", "Great Vine"}
+table.sort(NPC_LIST)
+
+local QUEST_ITEMS = { "Pearl1", "Pearl2", "Pearl3", "Pearl4", "Pearl5" }
+
+-- Helper Functions
+local function notify(title, content, duration)
+    WindUI:Notify({ Title = title, Content = content, Duration = duration or 5 })
+end
+
+local function setState(newState)
+    if currentState ~= newState then
+        currentState = newState
+        state.lastStateChange = tick()
+        if uiElements.status then
+            uiElements.status:SetTitle("Status: " .. currentState)
+        end
+    end
+end
+
+local function clickAt(x, y)
+    pcall(function()
+        SERVICES.VirtualUser:CaptureController()
+        SERVICES.VirtualUser:Button1Down(Vector2.new(x, y))
+        task.wait()
+        SERVICES.VirtualUser:Button1Up(Vector2.new(x, y))
+    end)
+end
+
+local function getCenterXY()
+    return CAMERA.ViewportSize.X / 2, CAMERA.ViewportSize.Y / 2
+end
+
+local function getCharacter()
+    return LOCAL_PLAYER.Character
+end
+
+-- Teleport Functions
+local function teleportTo(locationName, destination, type)
+    pcall(function()
+        local character = getCharacter()
+        if not character or not destination then
+            notify("Teleport Gagal", type .. " " .. locationName .. " tidak ada.")
+            return
+        end
+        local targetCFrame = (type == "CFrame") and destination or destination.CFrame + Vector3.new(0, 3, 0)
+        character:PivotTo(targetCFrame)
+        notify("Teleport Berhasil", "Pindah ke " .. locationName)
+    end)
+end
+
+local function teleportToLocation(locationName)
+    local spawnPoint = workspace.Items.SpawnPoints:FindFirstChild(locationName)
+    teleportTo(locationName, spawnPoint, "Lokasi")
+end
+
+local function teleportToNpc(npcName)
+    local npc = workspace.NPC:FindFirstChild(npcName)
+    local hrp = npc and npc:FindFirstChild("HumanoidRootPart")
+    teleportTo(npcName, hrp, "NPC")
+end
+
+local function teleportToItem(itemName)
+    local item = workspace.Items.Quests:FindFirstChild(itemName)
+    teleportTo(itemName, item, "Item")
+end
+
+local function teleportToCFrame(cframe, locationName)
+    teleportTo(locationName, cframe, "CFrame")
+end
+
+-- GUI Functions
+local function updateGuiVisibility(isHidden)
+    local elementsToToggle = {
+        PLAYER_GUI.Main and PLAYER_GUI.Main:FindFirstChild("TopNotification"),
+        PLAYER_GUI.FishUI and PLAYER_GUI.FishUI:FindFirstChild("FishDisplay") and PLAYER_GUI.FishUI.FishDisplay:FindFirstChild("InfoDisplay")
+    }
+    local count = 0
+    for _, element in ipairs(elementsToToggle) do
+        if element and element:IsA("GuiObject") then
+            element.Visible = not isHidden
+            count = count + 1
+        end
+    end
+    return count
+end
+
+-- Automation Loops
 local function autoSellLoop()
-    while autoSellEnabled do
-        pcall(function() FishRemote:FireServer("SellAllFish") end)
-        for i = 1, config.autoSellInterval do
-            if not autoSellEnabled then break end
+    while state.autoSellEnabled do
+        pcall(function() FISH_REMOTE:FireServer("SellAllFish") end)
+        for _ = 1, CONFIG.AutoSellInterval do
+            if not state.autoSellEnabled then break end
             task.wait(1)
         end
     end
 end
 
-local function autoOpenLoop(crateName, stateProvider)
-    while stateProvider() do
-        pcall(function() FishRemote:FireServer("RollBait", crateName) end)
-        task.wait(crateOpeningDelay)
-    end
-end
-
 local function autoQuestLoop()
-    while autoQuestEnabled do
-        pcall(function() QuestRemote:FireServer("Accept", "Theseus") end)
+    while state.autoQuestEnabled do
+        pcall(function() QUEST_REMOTE:FireServer("Accept", "Theseus") end)
         task.wait(5)
-        if not autoQuestEnabled then break end
-        pcall(function() QuestRemote:FireServer("Claim") end)
+        if not state.autoQuestEnabled then break end
+        pcall(function() QUEST_REMOTE:FireServer("Claim") end)
         task.wait(0.3)
-        if not autoQuestEnabled then break end
-        pcall(function() QuestRemote:FireServer("Claim") end)
+        if not state.autoQuestEnabled then break end
+        pcall(function() QUEST_REMOTE:FireServer("Claim") end)
         task.wait(5)
     end
 end
 
-FishRemote.OnClientEvent:Connect(function(...)
-    if not autoFishEnabled then return end
+local function autoOpenLoop()
+    while state.autoOpenActive do
+        pcall(function() FISH_REMOTE:FireServer("RollBait", state.selectedCrate) end)
+        task.wait(CONFIG.CrateOpeningDelay)
+    end
+end
+
+local function autoEnchantLoop(statusElement)
+    while state.autoEnchantActive do
+        state.lastReceivedEnchant = nil
+        statusElement:SetTitle("Status: Mencari " .. state.selectedArtifact)
+        local fishHolder = PLAYER_GUI.Main.Inventory.FishHolder
+        local artifactUUID
+        for _, item in ipairs(fishHolder:GetChildren()) do
+            if item.Name:find(state.selectedArtifact .. ":") then
+                artifactUUID = item.Name:split(":")[2]
+                break
+            end
+        end
+
+        if not artifactUUID then
+            statusElement:SetTitle("Status: Artifact habis! Berhenti.")
+            notify("Auto Enchant", state.selectedArtifact .. " tidak ditemukan.")
+            state.autoEnchantActive = false
+            break
+        end
+
+        statusElement:SetTitle("Status: Menjalankan enchant...")
+        local rodRemote = REMOTES:FindFirstChild("Rod")
+        if rodRemote then
+            rodRemote:FireServer({"EnchantRod", artifactUUID})
+        end
+
+        local timeout = 5
+        repeat
+            task.wait(0.1)
+            timeout -= 0.1
+        until state.lastReceivedEnchant or not state.autoEnchantActive or timeout <= 0
+
+        if state.lastReceivedEnchant then
+            if state.lastReceivedEnchant:lower() == state.targetEnchant:lower() then
+                statusElement:SetTitle("BERHASIL! Dapat: " .. state.targetEnchant)
+                notify("Auto Enchant Sukses!", "Berhasil mendapatkan enchant: " .. state.targetEnchant, 10)
+                state.autoEnchantActive = false
+            else
+                statusElement:SetTitle("Dapat: " .. state.lastReceivedEnchant .. ". Coba lagi...")
+                task.wait(1.5)
+            end
+        elseif timeout <= 0 then
+            statusElement:SetTitle("Status: Timeout. Coba lagi...")
+            task.wait(2)
+        end
+    end
+
+    if not state.autoEnchantActive then
+        if not statusElement.Title:find("BERHASIL") then statusElement:SetTitle("Status: IDLE") end
+        if uiElements.autoEnchantToggle then uiElements.autoEnchantToggle:SetState(false) end
+    end
+end
+
+-- Event Handlers
+FISH_REMOTE.OnClientEvent:Connect(function(...)
+    if not state.autoFishEnabled then return end
     local args = {...}
     local eventName = tostring(args[1]):lower()
 
     if eventName:find("reel") or eventName:find("shake") or eventName:find("stop") then
         setState(State.REELING)
-        return
-    end
-
-    if eventName:find("caught") or eventName:find("catch") or eventName:find("fish") then
+    elseif eventName:find("caught") or eventName:find("catch") or eventName:find("fish") then
         local fishId, qty
         if type(args[2]) == "number" then
-            fishId, qty = args[2], (type(args[3]) == "number" and args[3] or 1)
+            fishId = args[2]
+            qty = (type(args[3]) == "number") and args[3] or 1
         end
-        lastCaughtArgs = {id = fishId, qty = qty}
-        pcall(function() FishRemote:FireServer("FishCaught", lastCaughtArgs.id, lastCaughtArgs.qty) end)
+        state.lastCaughtArgs = {id = fishId, qty = qty}
+        pcall(function() FISH_REMOTE:FireServer("FishCaught", state.lastCaughtArgs.id, state.lastCaughtArgs.qty) end)
         setState(State.CASTING)
     end
 end)
 
-RunService.Heartbeat:Connect(function(deltaTime)
-    if not autoFishEnabled then return end
-    local cx, cy = getCenterXY()
+SERVICES.RunService.Heartbeat:Connect(function()
+    if not state.autoFishEnabled then return end
     local currentTime = tick()
-
+    
     if currentState == State.CASTING then
-        pcall(function() FishRemote:FireServer("StartFish", 0) end)
+        pcall(function() FISH_REMOTE:FireServer("StartFish", 0) end)
         setState(State.WAITING)
-    elseif currentState == State.WAITING and currentTime - lastStateChange > config.castTimeout then
+    elseif currentState == State.WAITING and currentTime - state.lastStateChange > CONFIG.CastTimeout then
         setState(State.CASTING)
     elseif currentState == State.REELING then
-        if currentTime - lastClickTime > config.currentDelay then
-            click_at(cx, cy)
-            lastClickTime = currentTime
+        if currentTime - state.lastClickTime > CONFIG.ClickDelay then
+            local cx, cy = getCenterXY()
+            clickAt(cx, cy)
+            state.lastClickTime = currentTime
         end
-        if currentTime - lastStateChange > config.reelTimeout then
+        if currentTime - state.lastStateChange > CONFIG.ReelTimeout then
             setState(State.CASTING)
         end
     end
 end)
 
+pcall(function()
+    local replicaSet = SERVICES.ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("ReplicaSet")
+    replicaSet.OnClientEvent:Connect(function(...)
+        if not state.autoEnchantActive then return end
+        local args = {...}
+        if #args > 2 and type(args[#args]) == "string" and type(args[2]) == "table" then
+            local dataTable = args[2]
+            if #dataTable >= 3 and dataTable[1] == "Rods" and dataTable[3] == "Enchantment" then
+                state.lastReceivedEnchant = args[#args]
+            end
+        end
+    end)
+end)
+
+
+-- GUI Construction
 local Window = WindUI:CreateWindow({
-    Title = "AutoFish Cerdas v4.8.1",
-    Size = UDim2.fromOffset(350, 480),
+    Title = "AutoFish Cerdas v5.6",
+    Size = UDim2.fromOffset(380, 520),
     OpenButton = {Title = "Open Auto Fish", Enabled = true}
 })
 
 local MainSection = Window:Section({Title = "Fitur"})
 
-do
-    local ControlTab = MainSection:Tab({Title = "Otomatisasi", Icon = "flame"})
-    statusElement = ControlTab:Paragraph({Title = "Status: IDLE", Desc = "Menampilkan status auto-fish saat ini.", TextColor = Color3.fromHex("#90e0ef")})
-    ControlTab:Divider()
-    ControlTab:Toggle({
-        Title = "Aktifkan Auto Fish",
-        Desc = "Mulai atau hentikan proses memancing otomatis.",
-        Value = autoFishEnabled,
-        Callback = function(state)
-            autoFishEnabled = state
-            setState(state and State.CASTING or State.IDLE)
-        end
-    })
-    ControlTab:Slider({
-        Title = "Atur Delay Klik",
-        Desc = "Mengatur jeda waktu saat menggulung ikan (detik).",
-        Value = {Min = 0.5, Max = 3, Default = config.currentDelay},
-        Step = 0.01,
-        Callback = function(value)
-            config.currentDelay = value
-        end
-    })
-    ControlTab:Divider()
-    ControlTab:Toggle({
-        Title = "Otomatis Jual Ikan",
-        Desc = "Aktifkan untuk menjual semua ikan setiap " .. config.autoSellInterval .. " detik.",
-        Value = autoSellEnabled,
-        Callback = function(state)
-            autoSellEnabled = state
-            if state then
-                task.spawn(autoSellLoop)
-                WindUI:Notify({Title = "Auto Jual", Content = "Aktif."})
-            else
-                WindUI:Notify({Title = "Auto Jual", Content = "Nonaktif."})
-            end
-        end
-    })
-    ControlTab:Divider()
-    ControlTab:Toggle({
-        Title = "Aktifkan Auto Quest (Theseus)",
-        Desc = "Loop Terima & Klaim quest dari Theseus.",
-        Value = autoQuestEnabled,
-        Callback = function(state)
-            autoQuestEnabled = state
-            if state then
-                task.spawn(autoQuestLoop)
-                WindUI:Notify({Title = "Auto Quest", Content = "Aktif."})
-            else
-                WindUI:Notify({Title = "Auto Quest", Content = "Nonaktif."})
-            end
-        end
-    })
-    ControlTab:Button({
-        Title = "Masak Zesty Lemon Fish",
-        Desc = "Membuat Zesty Lemon Fish sekali.",
-        Callback = function()
-            pcall(function()
-                FishRemote:FireServer("CraftRecipe", "Zesty Lemon Fish")
-                WindUI:Notify({Title = "Memasak", Content = "Zesty Lemon Fish dibuat."})
-            end)
-        end
-    })
+local function createControlTab(parent)
+    local tab = parent:Tab({Title = "Otomatisasi", Icon = "flame"})
+    uiElements.status = tab:Paragraph({Title = "Status: IDLE"})
+    tab:Divider()
 
-    local TeleportTab = MainSection:Tab({Title = "Teleportasi", Icon = "map-pin"})
-    TeleportTab:Paragraph({Title = "Pindah Lokasi", Desc = "Klik tombol untuk teleport ke lokasi."})
-    TeleportTab:Divider()
-    for locationName, _ in pairs(teleportLocations) do
-        TeleportTab:Button({Title = locationName, Callback = function() teleportTo(locationName) end})
-    end
-    TeleportTab:Divider()
-    TeleportTab:Paragraph({Title = "Item Quest", Desc = "Teleport ke lokasi item quest."})
-    for _, itemName in ipairs(questItems) do
-        TeleportTab:Button({Title = itemName, Callback = function() teleportToItem(itemName) end})
-    end
-    TeleportTab:Divider()
-    TeleportTab:Paragraph({Title = "Lokasi Kustom", Desc = "Teleport ke lokasi yang Anda simpan."})
-    for name, cf in pairs(customTeleportLocations) do
-        TeleportTab:Button({Title = name, Callback = function() teleportToCFrame(cf, name) end})
-    end
+    tab:Toggle({Title = "Aktifkan Auto Fish", Value = state.autoFishEnabled, Callback = function(s)
+        state.autoFishEnabled = s
+        setState(s and State.CASTING or State.IDLE)
+    end})
+    tab:Slider({Title = "Atur Delay Klik", Value = {Min = 0.5, Max = 3, Default = CONFIG.ClickDelay}, Step = 0.01, Callback = function(v)
+        CONFIG.ClickDelay = v
+    end})
 
-    local NpcTeleportTab = MainSection:Tab({Title = "Teleport NPC", Icon = "users"})
-    NpcTeleportTab:Paragraph({Title = "Pindah ke NPC", Desc = "Klik tombol untuk teleport ke NPC."})
-    NpcTeleportTab:Divider()
-    for _, npcName in ipairs(npcList) do
-        NpcTeleportTab:Button({Title = npcName, Callback = function() teleportToNpc(npcName) end})
-    end
+    tab:Divider()
+    tab:Toggle({Title = "Otomatis Jual Ikan", Value = state.autoSellEnabled, Callback = function(s)
+        state.autoSellEnabled = s
+        notify("Auto Jual", s and "Aktif." or "Nonaktif.")
+        if s then task.spawn(autoSellLoop) end
+    end})
 
-    local playerTeleportTab = MainSection:Tab({Title = "Teleport Player", Icon = "user-check"})
-    local playerTeleportButtons = {}
-    local function refreshPlayerTeleportList()
-        for _, button in ipairs(playerTeleportButtons) do
-            if button and button.Object and button.Object.Parent then
-                pcall(function() button:Destroy() end)
-            end
-        end
-        table.clear(playerTeleportButtons)
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player then
-                local btn = playerTeleportTab:Button({
+    tab:Divider()
+    tab:Toggle({Title = "Auto Quest (Theseus)", Value = state.autoQuestEnabled, Callback = function(s)
+        state.autoQuestEnabled = s
+        notify("Auto Quest", s and "Aktif." or "Nonaktif.")
+        if s then task.spawn(autoQuestLoop) end
+    end})
+
+    tab:Button({Title = "Masak Zesty Lemon Fish", Callback = function()
+        pcall(function()
+            FISH_REMOTE:FireServer("CraftRecipe", "Zesty Lemon Fish")
+            notify("Memasak", "Zesty Lemon Fish dibuat.")
+        end)
+    end})
+
+    tab:Toggle({Title = "Sembunyikan GUI Mancing", Value = state.isGuiHidden, Callback = function(s)
+        state.isGuiHidden = s
+        local count = updateGuiVisibility(s)
+        local statusText = s and "disembunyikan" or "ditampilkan"
+        notify("Operasi Selesai", ("Berhasil mengubah %d elemen GUI menjadi %s."):format(count, statusText))
+    end})
+end
+
+local function createTeleportTab(parent)
+    local tab = parent:Tab({Title = "Teleportasi", Icon = "map-pin"})
+    
+    local locNames = {}
+    for name in pairs(TELEPORT_LOCATIONS) do table.insert(locNames, name) end
+    table.sort(locNames)
+    local selectedLocation = locNames[1]
+    tab:Dropdown({Title = "Pilih Lokasi", Values = locNames, Value = selectedLocation, Callback = function(val) selectedLocation = val end})
+    tab:Button({Title = "Teleport ke Lokasi", Callback = function() teleportToLocation(selectedLocation) end})
+    tab:Divider()
+
+    local selectedNpc = NPC_LIST[1]
+    tab:Dropdown({Title = "Pilih NPC", Values = NPC_LIST, Value = selectedNpc, Callback = function(val) selectedNpc = val end})
+    tab:Button({Title = "Teleport ke NPC", Callback = function() teleportToNpc(selectedNpc) end})
+    tab:Divider()
+
+    local customNames = {}
+    for name in pairs(CUSTOM_TELEPORT_LOCATIONS) do table.insert(customNames, name) end
+    table.sort(customNames)
+    local selectedCustom = customNames[1]
+    tab:Dropdown({Title = "Lokasi Kustom", Values = customNames, Value = selectedCustom, Callback = function(val) selectedCustom = val end})
+    tab:Button({Title = "Teleport ke Kustom", Callback = function() teleportToCFrame(CUSTOM_TELEPORT_LOCATIONS[selectedCustom], selectedCustom) end})
+    tab:Divider()
+
+    local selectedQuest = QUEST_ITEMS[1]
+    tab:Dropdown({Title = "Item Quest", Values = QUEST_ITEMS, Value = selectedQuest, Callback = function(val) selectedQuest = val end})
+    tab:Button({Title = "Teleport ke Item", Callback = function() teleportToItem(selectedQuest) end})
+end
+
+local function createPlayerTeleportTab(parent)
+    local tab = parent:Tab({Title = "Teleport Player", Icon = "user-check"})
+    local playerButtons = {}
+    
+    local function refreshPlayerList()
+        for _, btn in pairs(playerButtons) do btn:Destroy() end
+        table.clear(playerButtons)
+        
+        for _, p in ipairs(SERVICES.Players:GetPlayers()) do
+            if p ~= LOCAL_PLAYER then
+                playerButtons[p.Name] = tab:Button({
                     Title = p.DisplayName,
-                    Desc = "Teleport ke " .. p.Name,
                     Callback = function()
                         pcall(function()
-                            local t = Players:FindFirstChild(p.Name)
-                            if not t then
-                                WindUI:Notify({Title = "Gagal", Content = "Player " .. p.Name .. " tidak ada."})
+                            local target = SERVICES.Players:FindFirstChild(p.Name)
+                            if not target then
+                                notify("Gagal", "Player " .. p.Name .. " tidak ada.")
                                 return
                             end
-                            local myC, tC = player.Character, t.Character
-                            if myC and tC and tC:FindFirstChild("HumanoidRootPart") then
-                                myC:PivotTo(tC.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
-                                WindUI:Notify({Title = "Sukses", Content = "Teleport ke " .. t.DisplayName})
+                            local myChar, targetChar = getCharacter(), target.Character
+                            if myChar and targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+                                myChar:PivotTo(targetChar.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0))
+                                notify("Sukses", "Teleport ke " .. target.DisplayName)
                             else
-                                WindUI:Notify({Title = "Gagal", Content = "Karakter tidak valid."})
+                                notify("Gagal", "Karakter tidak valid.")
                             end
                         end)
                     end
                 })
-                table.insert(playerTeleportButtons, btn)
             end
         end
     end
-    playerTeleportTab:Button({
-        Title = "Refresh List",
-        Desc = "Memuat ulang daftar pemain.",
-        Icon = "refresh-cw",
-        Color = Color3.fromHex("#38bdf8"),
-        Callback = function()
-            refreshPlayerTeleportList()
-            WindUI:Notify({Title = "Player List", Content = "Diperbarui."})
-        end
-    })
-    playerTeleportTab:Divider()
-    refreshPlayerTeleportList()
+    
+    tab:Button({Title = "Refresh List", Icon = "refresh-cw", Color = Color3.fromHex("#38bdf8"), Callback = function()
+        refreshPlayerList()
+        notify("Player List", "Diperbarui.")
+    end})
+    tab:Divider()
+    refreshPlayerList()
+end
 
-    local SpawnBoatTab = MainSection:Tab({Title = "Spawn Boat", Icon = "anchor"})
-    SpawnBoatTab:Paragraph({Title = "Panggil Perahu", Desc = "Klik tombol untuk memunculkan perahu di dekat Anda."})
-    SpawnBoatTab:Divider()
+local function createUtilityTabs(parent)
+    local spawnBoatTab = parent:Tab({Title = "Spawn Boat", Icon = "anchor"})
     local boatList = {"Bamboo Raft", "Raft", "Dinghy", "Jetski", "Fishing Boat", "Speed Boat", "Subski"}
-    for _, boatName in ipairs(boatList) do
-        SpawnBoatTab:Button({
-            Title = boatName,
-            Callback = function()
-                pcall(function()
-                    FishRemote:FireServer("SpawnBoat", boatName)
-                    WindUI:Notify({Title = "Spawn Boat", Content = boatName .. " telah dipanggil."})
-                end)
-            end
-        })
-    end
+    local selectedBoat = boatList[1]
+    spawnBoatTab:Dropdown({Title = "Pilih Perahu", Values = boatList, Value = selectedBoat, Callback = function(val) selectedBoat = val end})
+    spawnBoatTab:Button({Title = "Panggil Perahu", Callback = function()
+        pcall(function()
+            FISH_REMOTE:FireServer("SpawnBoat", selectedBoat)
+            notify("Spawn Boat", selectedBoat .. " telah dipanggil.")
+        end)
+    end})
 
-    local ShopTab = MainSection:Tab({Title = "Shop", Icon = "shopping-cart"})
-    ShopTab:Paragraph({Title = "Pembelian Otomatis", Desc = "Beli item dalam jumlah banyak."})
-    ShopTab:Divider()
+    local autoPetiTab = parent:Tab({Title = "Auto Peti", Icon = "archive"})
+    autoPetiTab:Paragraph({Title = "Otomatis Buka Peti"})
+    autoPetiTab:Slider({Title = "Jeda Buka Peti (Detik)", Value = {Min = 0.1, Max = 2, Default = CONFIG.CrateOpeningDelay}, Step = 0.1, Callback = function(v) CONFIG.CrateOpeningDelay = v end})
+    autoPetiTab:Divider()
+    local crateList = {"Basic Crate", "Advanced Crate", "Divine Crate", "Celestial Crate"}
+    state.selectedCrate = crateList[1]
+    autoPetiTab:Dropdown({Title = "Pilih Jenis Peti", Values = crateList, Value = state.selectedCrate, Callback = function(s) state.selectedCrate = s end})
+    autoPetiTab:Toggle({Title = "Mulai Auto Buka Peti", Value = state.autoOpenActive, Callback = function(s)
+        state.autoOpenActive = s
+        if s then
+            task.spawn(autoOpenLoop)
+            notify("Auto Buka Peti", "Aktif untuk: " .. state.selectedCrate)
+        else
+            notify("Auto Buka Peti", "Nonaktif.")
+        end
+    end})
+end
+
+local function createShopTab(parent)
+    local tab = parent:Tab({Title = "Shop", Icon = "shopping-cart"})
     local purchaseAmount = 1
-    ShopTab:Input({
-        Title = "Jumlah Pembelian",
-        Desc = "Masukkan berapa kali item dibeli.",
-        Placeholder = "1",
-        Callback = function(text)
-            local n = tonumber(text)
-            if n and n > 0 then
-                purchaseAmount = math.floor(n)
-            else
-                purchaseAmount = 1
-            end
-        end
-    })
-    ShopTab:Divider()
-    ShopTab:Paragraph({Title = "Beli Totem", Desc = "Beli totem cuaca/waktu."})
-    local function createTotemButton(tN, tDN)
-        ShopTab:Button({
-            Title = "Beli (" .. tDN .. ")",
-            Desc = "Beli '" .. tDN .. "'",
-            Callback = function()
-                task.spawn(function()
-                    local r = ReplicatedStorage.Remotes:FindFirstChild("World")
-                    if not r then return end
-                    for i = 1, purchaseAmount do
-                        pcall(function() r:FireServer("Buy", tN) end)
-                        task.wait(0.3)
-                    end
-                end)
-            end
-        })
+    tab:Input({Title = "Jumlah Pembelian", Placeholder = "1", Callback = function(text)
+        local n = tonumber(text)
+        purchaseAmount = (n and n > 0) and math.floor(n) or 1
+    end})
+    tab:Divider()
+    
+    tab:Paragraph({Title = "Beli Totem"})
+    local totems = { Night = "Night Totem", Day = "Day Totem", Rain = "Rain Totem", ["Blood Moon"] = "Blood Moon Totem" }
+    for name, displayName in pairs(totems) do
+        tab:Button({Title = "Beli " .. displayName, Callback = function()
+            task.spawn(function()
+                local remote = REMOTES:FindFirstChild("World")
+                if not remote then return end
+                for _ = 1, purchaseAmount do
+                    pcall(function() remote:FireServer("Buy", name) end)
+                    task.wait(0.3)
+                end
+            end)
+        end})
     end
-    createTotemButton("Night", "Night Totem")
-    createTotemButton("Day", "Day Totem")
-    createTotemButton("Rain", "Rain Totem")
-    createTotemButton("Blood Moon", "Blood Moon Totem")
-    ShopTab:Divider()
-    ShopTab:Paragraph({Title = "Beli Crate", Desc = "Beli peti umpan."})
-    local function createCrateButton(cN)
-        ShopTab:Button({
-            Title = "Beli (" .. cN .. ")",
-            Desc = "Beli '" .. cN .. "'",
-            Callback = function()
-                task.spawn(function()
-                    local r = ReplicatedStorage.Remotes:FindFirstChild("Rod")
-                    if not r then return end
-                    for i = 1, purchaseAmount do
-                        pcall(function() r:FireServer({"BuyBaitCrate", cN}) end)
-                        task.wait(0.3)
-                    end
-                end)
-            end
-        })
+    
+    tab:Divider()
+    tab:Paragraph({Title = "Beli Crate"})
+    local crates = {"Basic Crate", "Advanced Crate", "Divine Crate", "Celestial Crate"}
+    for _, crateName in ipairs(crates) do
+        tab:Button({Title = "Beli " .. crateName, Callback = function()
+            task.spawn(function()
+                local remote = REMOTES:FindFirstChild("Rod")
+                if not remote then return end
+                for _ = 1, purchaseAmount do
+                    pcall(function() remote:FireServer({"BuyBaitCrate", crateName}) end)
+                    task.wait(0.3)
+                end
+            end)
+        end})
     end
-    createCrateButton("Basic Crate")
-    createCrateButton("Advanced Crate")
-    createCrateButton("Divine Crate")
-    createCrateButton("Celestial Crate")
+end
 
-    local AutoPetiTab = MainSection:Tab({Title = "Auto Peti", Icon = "archive"})
-    AutoPetiTab:Paragraph({Title = "Otomatis Buka Peti", Desc = "Aktifkan untuk membuka peti secara terus-menerus."})
-    AutoPetiTab:Slider({
-        Title = "Jeda Buka Peti (Detik)",
-        Desc = "Mengatur jeda waktu antar pembukaan peti.",
-        Value = {Min = 0.1, Max = 2, Default = crateOpeningDelay},
-        Step = 0.1,
-        Callback = function(value) crateOpeningDelay = value end
-    })
-    AutoPetiTab:Divider()
-    AutoPetiTab:Toggle({
-        Title = "Auto Basic Crate",
-        Desc = "Otomatis membuka Basic Crate.",
-        Value = autoOpenBasic,
-        Callback = function(state)
-            autoOpenBasic = state
-            if state then
-                task.spawn(function() autoOpenLoop("Basic Crate", function() return autoOpenBasic end) end)
-                WindUI:Notify({Title = "Auto Basic Crate", Content = "Aktif."})
-            else
-                WindUI:Notify({Title = "Auto Basic Crate", Content = "Nonaktif."})
-            end
-        end
-    })
-    AutoPetiTab:Toggle({
-        Title = "Auto Advanced Crate",
-        Desc = "Otomatis membuka Advanced Crate.",
-        Value = autoOpenAdvanced,
-        Callback = function(state)
-            autoOpenAdvanced = state
-            if state then
-                task.spawn(function() autoOpenLoop("Advanced Crate", function() return autoOpenAdvanced end) end)
-                WindUI:Notify({Title = "Auto Advanced Crate", Content = "Aktif."})
-            else
-                WindUI:Notify({Title = "Auto Advanced Crate", Content = "Nonaktif."})
-            end
-        end
-    })
-    AutoPetiTab:Toggle({
-        Title = "Auto Divine Crate",
-        Desc = "Otomatis membuka Divine Crate.",
-        Value = autoOpenDivine,
-        Callback = function(state)
-            autoOpenDivine = state
-            if state then
-                task.spawn(function() autoOpenLoop("Divine Crate", function() return autoOpenDivine end) end)
-                WindUI:Notify({Title = "Auto Divine Crate", Content = "Aktif."})
-            else
-                WindUI:Notify({Title = "Auto Divine Crate", Content = "Nonaktif."})
-            end
-        end
-    })
-    AutoPetiTab:Toggle({
-        Title = "Auto Celestial Crate",
-        Desc = "Otomatis membuka Celestial Crate.",
-        Value = autoOpenCelestial,
-        Callback = function(state)
-            autoOpenCelestial = state
-            if state then
-                task.spawn(function() autoOpenLoop("Celestial Crate", function() return autoOpenCelestial end) end)
-                WindUI:Notify({Title = "Auto Celestial Crate", Content = "Aktif."})
-            else
-                WindUI:Notify({Title = "Auto Celestial Crate", Content = "Nonaktif."})
-            end
-        end
-    })
-
-    local FishHolderTab = MainSection:Tab({Title = "Fish Holder", Icon = "box"})
-    local FavoriteSection = FishHolderTab:Section({Title = "Favorite Actions"})
-    local UnfavoriteSection = FishHolderTab:Section({Title = "Unfavorite Actions"})
-    local favorite_buttons = {}
-    local unfavorite_buttons = {}
+local function createFishHolderTab(parent)
+    local tab = parent:Tab({Title = "Fish Holder", Icon = "box"})
+    local favSection = tab:Section({Title = "Favorite Actions"})
+    local unfavSection = tab:Section({Title = "Unfavorite Actions"})
+    local buttonTables = { favorite = {}, unfavorite = {} }
 
     local function performFavoriteAction(targetFishName, shouldBeFavorite)
         task.spawn(function()
-            local actionText = shouldBeFavorite and "Memfavoritkan" or "Menghapus favorit"
-            local fishText = targetFishName or "semua ikan"
-            -- WindUI:Notify({Title = "Proses", Content = actionText .. " " .. fishText .. "..."})
-            local MainGui, InventoryFrame, FishHolder = PlayerGui:WaitForChild("Main"), PlayerGui.Main:WaitForChild("Inventory"), PlayerGui.Main.Inventory:WaitForChild("FishHolder")
-            if not FishHolder then return end
-            for _, fishObject in ipairs(FishHolder:GetChildren()) do
-                if not targetFishName or string.find(fishObject.Name, targetFishName .. ":") then
+            local fishHolder = PLAYER_GUI.Main.Inventory.FishHolder
+            if not fishHolder then return end
+
+            for _, fishObject in ipairs(fishHolder:GetChildren()) do
+                if not targetFishName or fishObject.Name:find(targetFishName .. ":") then
                     local uuid = fishObject.Name:split(":")[2]
                     if uuid then
-                        FishRemote:FireServer("FavoriteFish", uuid, shouldBeFavorite)
+                        FISH_REMOTE:FireServer("FavoriteFish", uuid, shouldBeFavorite)
                         task.wait(0.05)
                     end
                 end
             end
-            InventoryFrame.Visible = false
+            PLAYER_GUI.Main.Inventory.Visible = false
             task.wait(0.1)
-            -- InventoryFrame.Visible = true
-            WindUI:Notify({Title = "Selesai", Content = fishText .. " berhasil diproses."})
+            notify("Selesai", (targetFishName or "semua ikan") .. " berhasil diproses.")
         end)
     end
     
-    -- [KODE DIPERBARUI] Fungsi ini sekarang menghitung jumlah ikan
-    local function createFishButtons(parentSection, buttonTable, isFavoriteAction)
-        for _, button in ipairs(buttonTable) do pcall(function() button:Destroy() end) end
-        table.clear(buttonTable)
+    local function createFishButtons(section, btnTable, isFavoriteAction)
+        for _, button in ipairs(btnTable) do pcall(function() button:Destroy() end) end
+        table.clear(btnTable)
 
-        local actionText = isFavoriteAction and "Favorite" or "Unfavorite"
-        -- WindUI:Notify({Title = "Inventory Scan", Content = "Memindai dan menghitung ikan untuk daftar " .. actionText .. "..."})
-
-        local FishHolder = PlayerGui:WaitForChild("Main"):WaitForChild("Inventory"):WaitForChild("FishHolder")
-        if not FishHolder then
-            WindUI:Notify({Title = "Error", Content = "Inventory tidak ditemukan."})
-            return
-        end
-
-        -- Menghitung jumlah untuk setiap jenis ikan
+        local fishHolder = PLAYER_GUI.Main.Inventory.FishHolder
+        if not fishHolder then notify("Error", "Inventory tidak ditemukan."); return end
+        
         local fishCounts = {}
-        for _, fishObject in ipairs(FishHolder:GetChildren()) do
-            local fishName = string.split(fishObject.Name, ":")[1]
-            if fishName then
-                fishCounts[fishName] = (fishCounts[fishName] or 0) + 1
-            end
+        for _, fishObject in ipairs(fishHolder:GetChildren()) do
+            local fishName = fishObject.Name:split(":")[1]
+            if fishName then fishCounts[fishName] = (fishCounts[fishName] or 0) + 1 end
         end
-
-        -- Mengurutkan nama ikan berdasarkan abjad
-        local sortedFishNames = {}
-        for fishName in pairs(fishCounts) do
-            table.insert(sortedFishNames, fishName)
+        
+        local sortedNames = {}
+        for name in pairs(fishCounts) do table.insert(sortedNames, name) end
+        table.sort(sortedNames)
+        
+        if #sortedNames == 0 then notify("Inventory Scan", "Tidak ada ikan di inventory."); return end
+        
+        for _, name in ipairs(sortedNames) do
+            local count = fishCounts[name]
+            local btn = section:Button({Title = name .. " (" .. tostring(count) .. ")", Callback = function() performFavoriteAction(name, isFavoriteAction) end})
+            table.insert(btnTable, btn)
         end
-        table.sort(sortedFishNames)
-
-        if #sortedFishNames == 0 then
-            WindUI:Notify({Title = "Inventory Scan", Content = "Tidak ada ikan di inventory."})
-            return
-        end
-
-        -- Membuat tombol dengan jumlah ikan
-        for _, fishName in ipairs(sortedFishNames) do
-            local count = fishCounts[fishName]
-            local btn = parentSection:Button({
-                Title = fishName .. " (" .. tostring(count) .. ")",
-                Callback = function() performFavoriteAction(fishName, isFavoriteAction) end
-            })
-            table.insert(buttonTable, btn)
-        end
-        WindUI:Notify({Title = "Inventory Scan", Content = "Daftar " .. actionText .. " berhasil diperbarui!"})
+        notify("Inventory Scan", "Daftar berhasil diperbarui!")
     end
 
-    FavoriteSection:Button({
-        Title = "Refresh Favorite List",
-        Desc = "Pindai ulang inventory untuk daftar Favorite.",
-        Icon = "refresh-cw",
-        Color = Color3.fromHex("#38bdf8"),
-        Callback = function() createFishButtons(FavoriteSection, favorite_buttons, true) end
-    })
-
-    UnfavoriteSection:Button({
-        Title = "Refresh Unfavorite List",
-        Desc = "Pindai ulang inventory untuk daftar Unfavorite.",
-        Icon = "refresh-cw",
-        Color = Color3.fromHex("#38bdf8"),
-        Callback = function() createFishButtons(UnfavoriteSection, unfavorite_buttons, false) end
-    })
-
-    local MiscTab = MainSection:Tab({Title = "MISC", Icon = "settings"})
-    MiscTab:Paragraph({Title = "Fitur Lain & Pengaturan", Desc = "Berisi berbagai fungsi tambahan."})
-    MiscTab:Divider()
-    MiscTab:Toggle({
-        Title = "Sembunyikan Notifikasi Game",
-        Desc = "Secara aktif membersihkan teks notifikasi bawaan game yang spam.",
-        Value = hideGuiEnabled,
-        Callback = function(state)
-            hideGuiEnabled = state
-            if state then
-                hideGuiConnection = RunService.RenderStepped:Connect(function()
-                    for _, v in ipairs(PlayerGui:GetDescendants()) do
-                        if v:IsA("TextLabel") and (string.find(v.Name:lower(), "autosold") or string.find(v.Text:lower(), "auto sold")) then
-                            v.Text = ""
-                        end
-                    end
-                end)
-                WindUI:Notify({Title = "Penyembunyi GUI Aktif", Content = "Notifikasi game akan disembunyikan."})
-            else
-                if hideGuiConnection then
-                    hideGuiConnection:Disconnect()
-                    hideGuiConnection = nil
-                end
-                WindUI:Notify({Title = "Penyembunyi GUI Nonaktif", Content = "Notifikasi game akan ditampilkan lagi."})
-            end
-        end
-    })
-    MiscTab:Divider()
-    MiscTab:Button({
-        Title = "Salin Posisi & Arah (CFrame)",
-        Desc = "Menyalin CFrame karakter Anda ke clipboard untuk membuat lokasi teleport.",
-        Callback = function()
-            pcall(function()
-                if not setclipboard then
-                    WindUI:Notify({Title = "Error", Content = "Executor Anda tidak mendukung setclipboard."})
-                    return
-                end
-                local char = player.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    local cf = hrp.CFrame
-                    local x, y, z, r00, r01, r02, r10, r11, r12, r20, r21, r22 = cf:GetComponents()
-                    local cframeString = string.format("CFrame.new(%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f)", x, y, z, r00, r01, r02, r10, r11, r12, r20, r21, r22)
-                    setclipboard(cframeString)
-                    WindUI:Notify({Title = "Sukses", Content = "CFrame karakter telah disalin."})
-                else
-                    WindUI:Notify({Title = "Gagal", Content = "Tidak dapat menemukan karakter."})
-                end
-            end)
-        end
-    })
-    MiscTab:Divider()
-    MiscTab:Button({
-        Title = "Hapus Flag",
-        Desc = "Menghapus semua objek bernama 'Flag' di dalam game.",
-        Callback = function()
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj.Name == "Flag" then
-                    pcall(function() obj:Destroy() end)
-                end
-            end
-            WindUI:Notify({Title = "Operasi Selesai", Content = "Semua 'Flag' dihapus."})
-        end
-    })
+    favSection:Button({Title = "Refresh Favorite List", Icon = "refresh-cw", Color = Color3.fromHex("#38bdf8"), Callback = function() createFishButtons(favSection, buttonTables.favorite, true) end})
+    unfavSection:Button({Title = "Refresh Unfavorite List", Icon = "refresh-cw", Color = Color3.fromHex("#38bdf8"), Callback = function() createFishButtons(unfavSection, buttonTables.unfavorite, false) end})
 end
+
+local function createEnchantTab(parent)
+    local tab = parent:Tab({Title = "Auto Enchant", Icon = "sparkles"})
+    local enchantStatus = tab:Paragraph({Title = "Status: IDLE"})
+    tab:Divider()
+
+    local artifactList = {}
+    pcall(function() for _, v in ipairs(SERVICES.ReplicatedStorage.Assets.Artifact:GetChildren()) do table.insert(artifactList, v.Name) end end)
+    table.sort(artifactList)
+    if #artifactList > 0 then state.selectedArtifact = artifactList[1] end
+    
+    tab:Dropdown({Title = "Pilih Artifact", Values = artifactList, Value = state.selectedArtifact, Callback = function(val) state.selectedArtifact = val end})
+    tab:Button({Title = "Enchant Manual (1x)", Callback = function()
+        task.spawn(function()
+            local fishHolder = PLAYER_GUI.Main.Inventory.FishHolder
+            local artifactUUID
+            for _, item in ipairs(fishHolder:GetChildren()) do
+                if item.Name:find(state.selectedArtifact .. ":") then
+                    artifactUUID = item.Name:split(":")[2]
+                    break
+                end
+            end
+            if artifactUUID then
+                notify("Enchanting...", "Menggunakan 1x " .. state.selectedArtifact)
+                local rodRemote = REMOTES:FindFirstChild("Rod")
+                if rodRemote then rodRemote:FireServer({"EnchantRod", artifactUUID}) end
+            else
+                notify("Gagal", state.selectedArtifact .. " tidak ditemukan.")
+            end
+        end)
+    end})
+    tab:Divider()
+
+    tab:Paragraph({Title = "Auto Enchant ke Target"})
+    local enchantList = {"Quick", "Lightning", "Bubble", "Resilient", "HeavyPull", "Minty", "Controlled", "Knowledgable", "Variance", "Rare", "QuickCatch", "Lucky", "Leprechaun", "Marathon", "Longevity", "Heavy", "Mighty", "Colossal", "Chaos", "Golden"}
+    table.sort(enchantList)
+    
+    tab:Dropdown({Title = "Pilih Enchant Target", Values = enchantList, Value = state.targetEnchant, Callback = function(s)
+        state.targetEnchant = s
+        notify("Target Diubah", "Target enchant: " .. s)
+    end})
+    uiElements.autoEnchantToggle = tab:Toggle({Title = "Mulai Auto Enchant", Value = state.autoEnchantActive, Callback = function(s)
+        state.autoEnchantActive = s
+        if s then task.spawn(function() autoEnchantLoop(enchantStatus) end) end
+    end})
+end
+
+local function createMiscTab(parent)
+    local tab = parent:Tab({Title = "MISC", Icon = "settings"})
+    tab:Paragraph({Title = "Fitur Lain & Pengaturan"})
+    tab:Divider()
+    
+    tab:Button({Title = "Salin Posisi & Arah (CFrame)", Callback = function()
+        pcall(function()
+            if not setclipboard then notify("Error", "Executor tidak mendukung setclipboard."); return end
+            local char = getCharacter()
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local cf = hrp.CFrame
+                local cfs = string.format("CFrame.new(%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f)", cf:GetComponents())
+                setclipboard(cfs)
+                notify("Sukses", "CFrame karakter telah disalin.")
+            else
+                notify("Gagal", "Karakter tidak ditemukan.")
+            end
+        end)
+    end})
+    tab:Divider()
+    
+    tab:Button({Title = "Hapus Flag", Callback = function()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj.Name == "Flag" then pcall(function() obj:Destroy() end) end
+        end
+        notify("Operasi Selesai", "Semua 'Flag' dihapus.")
+    end})
+end
+
+-- Initialize UI
+createControlTab(MainSection)
+createTeleportTab(MainSection)
+createPlayerTeleportTab(MainSection)
+createUtilityTabs(MainSection)
+createShopTab(MainSection)
+createFishHolderTab(MainSection)
+createEnchantTab(MainSection)
+createMiscTab(MainSection)
+
+-- Initial setup
+updateGuiVisibility(state.isGuiHidden)
