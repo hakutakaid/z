@@ -20,7 +20,7 @@ local CONFIG = {
     RemoteEventName = "Fish",
     CastTimeout = 15,
     ReelTimeout = 10,
-    AutoSellInterval = 20,
+    AutoSellInterval = 60,
     ClickDelay = 0.3,
     CrateOpeningDelay = 0.3
 }
@@ -47,7 +47,9 @@ local state = {
     lastReceivedEnchant = nil,
     selectedCrate = "Basic Crate",
     targetEnchant = "Mighty",
-    selectedArtifact = "Regular Artifact"
+    selectedArtifact = "Regular Artifact",
+    autoFavoriteArtifactsEnabled = false,
+    autoSellJunkEnabled = true
 }
 
 -- UI Elements
@@ -61,6 +63,30 @@ if SERVICES.CoreGui:FindFirstChild("AutoFishCerdas_WindUI") then
 end
 
 -- Data Tables
+local ARTIFACT_LIST = {}
+pcall(function()
+    for _, v in ipairs(SERVICES.ReplicatedStorage.Assets.Artifact:GetChildren()) do
+        table.insert(ARTIFACT_LIST, v.Name)
+    end
+end)
+table.sort(ARTIFACT_LIST)
+
+local JUNK_ITEMS_TO_SELL = {
+    ["Plastic Bottle"] = true,
+    ["Plastic Cup"] = true,
+    ["Straw"] = true,
+    ["Bottle"] = true,
+    ["Barrel"] = true,
+    ["Plank"] = true,
+    ["Cup"] = true,
+    ["Rock"] = true,
+    ["Crate"] = true,
+    ["Net"] = true,
+    ["Trash Bag"] = true,
+    ["Robber Duck"] = true,
+}
+
+
 local TELEPORT_LOCATIONS = {
     ["Catcher's Camp"] = "Special",
     ["Shobati"] = "Catcher's Camp",
@@ -71,6 +97,29 @@ local TELEPORT_LOCATIONS = {
     ["Lava Island"] = "Ice Island",
     ["Fishman Island"] = "Special",
     ["Sky Island"] = "Special"
+}
+
+local DESKRIPSI_ENCHANT = {
+    Quick = { desc = "Efek: +15% Kecepatan Jig\nPeluang: 10" },
+    Controlled = { desc = "Efek: +25% Kontrol\nPeluang: 20" },
+    Resilient = { desc = "Efek: +20% Resistansi\nPeluang: 25" },
+    HeavyPull = { desc = "Efek: +25% Berat Tarikan Maks.\nPeluang: 75" },
+    Marathon = { desc = "Efek: +20% Pengurasan Energi (Daya Tahan)\nPeluang: 100" },
+    Bubble = { desc = "Efek: +25% Ukuran Gelembung\nPeluang: 10" },
+    QuickCatch = { desc = "Efek: +15% Kecepatan Menangkap\nPeluang: 50" },
+    Knowledgable = { desc = "Efek: +25% Perolehan XP\nPeluang: 25" },
+    Variance = { desc = "Efek: +5% Peluang Variasi\nPeluang: 25" },
+    Minty = { desc = "Efek: Peluang Variasi Peppermint\nPeluang: 50" },
+    Lightning = { desc = "Efek: +35% Kecepatan Jig\nPeluang: 50" },
+    Lucky = { desc = "Efek: +20% Keberuntungan\nPeluang: 60" },
+    Heavy = { desc = "Efek: +15% Berat Ikan\nPeluang: 115" },
+    Mighty = { desc = "Efek: +30% Berat Ikan\nPeluang: 80" },
+    Leprechaun = { desc = "Efek: +50% Keberuntungan\nPeluang: 250" },
+    Rare = { desc = "Efek: +15% Peluang Bentuk Spesial\nPeluang: 100" },
+    Longevity = { desc = "Efek: +25% Panjang Maks.\nPeluang: 10" },
+    Colossal = { desc = "Efek: Peluang Ikan Raksasa (Giant)\nPeluang: 130" },
+    Golden = { desc = "Efek: Peluang Ikan Emas (Shiny)\nPeluang: 80" },
+    Chaos = { desc = "Efek: Peluang Variasi Electric/Translucent/Sinister\nPeluang: 165" },
 }
 
 local CUSTOM_TELEPORT_LOCATIONS = {
@@ -249,6 +298,72 @@ local function autoEnchantLoop(statusElement)
     end
 end
 
+local function autoFavoriteArtifactsLoop(statusElement)
+    while state.autoFavoriteArtifactsEnabled do
+        statusElement:SetTitle("Status: Mem-favorite semua artifact...")
+        pcall(function()
+            local fishHolder = PLAYER_GUI.Main.Inventory.FishHolder
+            local artifactFoundCount = 0
+            if not fishHolder then return end
+
+            for _, item in ipairs(fishHolder:GetChildren()) do
+                if not state.autoFavoriteArtifactsEnabled then break end
+                
+                local itemName = item.Name:split(":")[1]
+                local isArtifact = table.find(ARTIFACT_LIST, itemName)
+
+                if isArtifact then
+                    local uuid = item.Name:split(":")[2]
+                    if uuid then
+                        FISH_REMOTE:FireServer("FavoriteFish", uuid, true)
+                        artifactFoundCount = artifactFoundCount + 1
+                        task.wait(0.1)
+                    end
+                end
+            end
+            
+            -- if artifactFoundCount > 0 then
+                -- notify("Auto Favorite", "Perintah favorite dikirim untuk " .. artifactFoundCount .. " artifact.")
+            -- end
+        end)
+        statusElement:SetTitle("Status: Menunggu (15 detik)...")
+        task.wait(15)
+    end
+    statusElement:SetTitle("Status: Nonaktif")
+end
+
+local function autoSellJunkLoop()
+    while state.autoSellJunkEnabled do
+        local junkSoldCount = 0
+
+        pcall(function()
+            local fishHolder = PLAYER_GUI.Main.Inventory.FishHolder
+            if not fishHolder then return end
+
+            for _, item in ipairs(fishHolder:GetChildren()) do
+                if not state.autoSellJunkEnabled then break end
+
+                local nameParts = item.Name:split(":")
+                local itemName = nameParts[1]
+                local uuid = nameParts[2]
+
+                if uuid and JUNK_ITEMS_TO_SELL[itemName] then
+                    FISH_REMOTE:FireServer("SellFish", uuid)
+                    junkSoldCount = junkSoldCount + 1 
+                    task.wait(0.2)
+                end
+            end
+        end)
+
+        if junkSoldCount > 0 then
+            print("Berhasil menjual " .. junkSoldCount .. " item sampah.")
+        end
+
+        task.wait(60)
+    end
+end
+
+
 -- Event Handlers
 FISH_REMOTE.OnClientEvent:Connect(function(...)
     if not state.autoFishEnabled then return end
@@ -307,7 +422,7 @@ end)
 
 -- GUI Construction
 local Window = WindUI:CreateWindow({
-    Title = "AutoFish Cerdas v5.6",
+    Title = "Fish Pro",
     Size = UDim2.fromOffset(380, 520),
     OpenButton = {Title = "Open Auto Fish", Enabled = true}
 })
@@ -328,11 +443,25 @@ local function createControlTab(parent)
     end})
 
     tab:Divider()
-    tab:Toggle({Title = "Otomatis Jual Ikan", Value = state.autoSellEnabled, Callback = function(s)
+    tab:Toggle({Title = "Otomatis Jual Semua Ikan", Value = state.autoSellEnabled, Callback = function(s)
         state.autoSellEnabled = s
-        notify("Auto Jual", s and "Aktif." or "Nonaktif.")
+        notify("Auto Jual Semua Ikan", s and "Aktif." or "Nonaktif.")
         if s then task.spawn(autoSellLoop) end
     end})
+    
+    -- [TOMBOL BARU DITAMBAHKAN DI SINI]
+    tab:Toggle({
+        Title = "Otomatis Jual Sampah",
+        Value = state.autoSellJunkEnabled,
+        Callback = function(s)
+            state.autoSellJunkEnabled = s
+            notify("Auto Jual Sampah", s and "Aktif." or "Nonaktif.")
+            if s then
+                task.spawn(autoSellJunkLoop)
+            end
+        end
+    })
+    -- [AKHIR DARI KODE BARU]
 
     tab:Divider()
     tab:Toggle({Title = "Auto Quest (Theseus)", Value = state.autoQuestEnabled, Callback = function(s)
@@ -414,8 +543,15 @@ local function createPlayerTeleportTab(parent)
         
         for _, p in ipairs(SERVICES.Players:GetPlayers()) do
             if p ~= LOCAL_PLAYER then
+                local buttonTitle
+                if p.DisplayName == p.Name then
+                    buttonTitle = p.Name
+                else
+                    buttonTitle = p.DisplayName .. "\n" .. p.Name
+                end
+
                 playerButtons[p.Name] = tab:Button({
-                    Title = p.DisplayName,
+                    Title = buttonTitle,
                     Callback = function()
                         pcall(function()
                             local target = SERVICES.Players:FindFirstChild(p.Name)
@@ -578,12 +714,13 @@ local function createEnchantTab(parent)
     local enchantStatus = tab:Paragraph({Title = "Status: IDLE"})
     tab:Divider()
 
-    local artifactList = {}
-    pcall(function() for _, v in ipairs(SERVICES.ReplicatedStorage.Assets.Artifact:GetChildren()) do table.insert(artifactList, v.Name) end end)
-    table.sort(artifactList)
-    if #artifactList > 0 then state.selectedArtifact = artifactList[1] end
+    if #ARTIFACT_LIST > 0 then
+        state.selectedArtifact = ARTIFACT_LIST[1]
+    end
     
-    tab:Dropdown({Title = "Pilih Artifact", Values = artifactList, Value = state.selectedArtifact, Callback = function(val) state.selectedArtifact = val end})
+    tab:Dropdown({Title = "Pilih Artifact", Values = ARTIFACT_LIST, Value = state.selectedArtifact, Callback = function(val)
+        state.selectedArtifact = val
+    end})
     tab:Button({Title = "Enchant Manual (1x)", Callback = function()
         task.spawn(function()
             local fishHolder = PLAYER_GUI.Main.Inventory.FishHolder
@@ -597,26 +734,40 @@ local function createEnchantTab(parent)
             if artifactUUID then
                 notify("Enchanting...", "Menggunakan 1x " .. state.selectedArtifact)
                 local rodRemote = REMOTES:FindFirstChild("Rod")
-                if rodRemote then rodRemote:FireServer({"EnchantRod", artifactUUID}) end
+                if rodRemote then
+                    rodRemote:FireServer({"EnchantRod", artifactUUID})
+                end
             else
                 notify("Gagal", state.selectedArtifact .. " tidak ditemukan.")
             end
         end)
     end})
     tab:Divider()
-
     tab:Paragraph({Title = "Auto Enchant ke Target"})
-    local enchantList = {"Quick", "Lightning", "Bubble", "Resilient", "HeavyPull", "Minty", "Controlled", "Knowledgable", "Variance", "Rare", "QuickCatch", "Lucky", "Leprechaun", "Marathon", "Longevity", "Heavy", "Mighty", "Colossal", "Chaos", "Golden"}
-    table.sort(enchantList)
-    
-    tab:Dropdown({Title = "Pilih Enchant Target", Values = enchantList, Value = state.targetEnchant, Callback = function(s)
-        state.targetEnchant = s
-        notify("Target Diubah", "Target enchant: " .. s)
+    local enchantList = {"Quick", "Controlled", "Resilient", "HeavyPull", "Marathon", "Bubble", "QuickCatch", "Knowledgable", "Variance", "Minty", "Lightning", "Lucky", "Heavy", "Mighty", "Leprechaun", "Rare", "Longevity", "Colossal", "Golden", "Chaos"}
+    local enchantDescriptionDisplay = tab:Paragraph({Title = "Pilih enchant untuk melihat detail...", Centered = false})
+    tab:Dropdown({Title = "Pilih Enchant Target", Values = enchantList, Value = state.targetEnchant, Callback = function(selection)
+        state.targetEnchant = selection
+        notify("Target Diubah", "Target enchant: " .. selection)
+        local info = DESKRIPSI_ENCHANT[selection]
+        if info then
+            enchantDescriptionDisplay:SetTitle(info.desc)
+        else
+            enchantDescriptionDisplay:SetTitle("Deskripsi untuk '" .. selection .. "' tidak ditemukan.")
+        end
     end})
     uiElements.autoEnchantToggle = tab:Toggle({Title = "Mulai Auto Enchant", Value = state.autoEnchantActive, Callback = function(s)
         state.autoEnchantActive = s
-        if s then task.spawn(function() autoEnchantLoop(enchantStatus) end) end
+        if s then
+            task.spawn(function()
+                autoEnchantLoop(enchantStatus)
+            end)
+        end
     end})
+    local initialInfo = DESKRIPSI_ENCHANT[state.targetEnchant]
+    if initialInfo then
+        enchantDescriptionDisplay:SetTitle(initialInfo.desc)
+    end
 end
 
 local function createMiscTab(parent)
@@ -649,6 +800,28 @@ local function createMiscTab(parent)
     end})
 end
 
+local function createAutoFavoriteTab(parent)
+    local tab = parent:Tab({Title = "Auto Favorit", Icon = "star"})
+    local statusElement = tab:Paragraph({Title = "Status: Nonaktif"})
+    tab:Divider()
+    tab:Paragraph({Title = "Otomatis Favorite Artifact", Content = "Mengaktifkan ini akan otomatis mem-favorite semua artifact di inventory setiap 15 detik. Berguna agar artifact tidak sengaja terjual."})
+    
+    tab:Toggle({
+        Title = "Aktifkan Auto Favorite Artifact",
+        Value = state.autoFavoriteArtifactsEnabled,
+        Callback = function(s)
+            state.autoFavoriteArtifactsEnabled = s
+            if s then
+                notify("Auto Favorite", "Diaktifkan. Akan berjalan setiap 15 detik.")
+                task.spawn(function() autoFavoriteArtifactsLoop(statusElement) end)
+            else
+                notify("Auto Favorite", "Nonaktif.")
+            end
+        end
+    })
+end
+
+
 -- Initialize UI
 createControlTab(MainSection)
 createTeleportTab(MainSection)
@@ -656,8 +829,13 @@ createPlayerTeleportTab(MainSection)
 createUtilityTabs(MainSection)
 createShopTab(MainSection)
 createFishHolderTab(MainSection)
+createAutoFavoriteTab(MainSection)
 createEnchantTab(MainSection)
 createMiscTab(MainSection)
 
 -- Initial setup
 updateGuiVisibility(state.isGuiHidden)
+
+if state.autoSellJunkEnabled then
+    task.spawn(autoSellJunkLoop)
+end
