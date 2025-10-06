@@ -83,7 +83,8 @@ local JUNK_ITEMS_TO_SELL = {
     ["Crate"] = true,
     ["Net"] = true,
     ["Trash Bag"] = true,
-    ["Robber Duck"] = true,
+    ["Rubber Duck"] = true,
+    ["Wheel"] = true,
 }
 
 
@@ -535,22 +536,22 @@ end
 
 local function createPlayerTeleportTab(parent)
     local tab = parent:Tab({Title = "Teleport Player", Icon = "user-check"})
+    local playerSection = tab:Section({Title = "Daftar Player"})
     local playerButtons = {}
-    
+
     local function refreshPlayerList()
-        for _, btn in pairs(playerButtons) do btn:Destroy() end
+        for _, btn in pairs(playerButtons) do
+            pcall(function() btn:Destroy() end)
+        end
         table.clear(playerButtons)
-        
+
         for _, p in ipairs(SERVICES.Players:GetPlayers()) do
             if p ~= LOCAL_PLAYER then
-                local buttonTitle
-                if p.DisplayName == p.Name then
-                    buttonTitle = p.Name
-                else
-                    buttonTitle = p.DisplayName .. "\n" .. p.Name
-                end
+                local buttonTitle = (p.DisplayName == p.Name)
+                    and p.Name
+                    or (p.DisplayName .. "\n" .. p.Name)
 
-                playerButtons[p.Name] = tab:Button({
+                local btn = playerSection:Button({
                     Title = buttonTitle,
                     Callback = function()
                         pcall(function()
@@ -569,16 +570,26 @@ local function createPlayerTeleportTab(parent)
                         end)
                     end
                 })
+
+                table.insert(playerButtons, btn)
             end
         end
     end
-    
-    tab:Button({Title = "Refresh List", Icon = "refresh-cw", Color = Color3.fromHex("#38bdf8"), Callback = function()
-        refreshPlayerList()
-        notify("Player List", "Diperbarui.")
-    end})
+
+    tab:Button({
+        Title = "Refresh List",
+        Icon = "refresh-cw",
+        Color = Color3.fromHex("#38bdf8"),
+        Callback = function()
+            refreshPlayerList()
+            notify("Player List", "Diperbarui.")
+        end
+    })
+
     tab:Divider()
     refreshPlayerList()
+    SERVICES.Players.PlayerAdded:Connect(refreshPlayerList)
+    SERVICES.Players.PlayerRemoving:Connect(refreshPlayerList)
 end
 
 local function createUtilityTabs(parent)
