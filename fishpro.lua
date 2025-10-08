@@ -20,7 +20,7 @@ local CONFIG = {
     RemoteEventName = "Fish",
     CastTimeout = 15,
     ReelTimeout = 10,
-    AutoSellInterval = 60,
+    AutoSellInterval = 20,
     ClickDelay = 0.3,
     CrateOpeningDelay = 0.3
 }
@@ -215,14 +215,26 @@ local function updateGuiVisibility(isHidden)
     return count
 end
 
--- Automation Loops
 local function autoSellLoop()
+    local MAX_INVENTORY_CAPACITY = 275
+
     while state.autoSellEnabled do
-        pcall(function() FISH_REMOTE:FireServer("SellAllFish") end)
-        for _ = 1, CONFIG.AutoSellInterval do
-            if not state.autoSellEnabled then break end
-            task.wait(1)
-        end
+        pcall(function()
+            local fishHolder = PLAYER_GUI.Main.Inventory.FishHolder
+            if not fishHolder then
+                return
+            end
+
+            local currentItemCount = #fishHolder:GetChildren()
+
+            if currentItemCount >= MAX_INVENTORY_CAPACITY then
+                notify("Auto Jual", "Inventory penuh (" .. currentItemCount .. "/" .. MAX_INVENTORY_CAPACITY .. "), menjual semua ikan!")
+                FISH_REMOTE:FireServer("SellAllFish")
+                task.wait(2)
+            end
+        end)
+        
+        task.wait(CONFIG.AutoSellInterval)
     end
 end
 
@@ -444,13 +456,19 @@ local function createControlTab(parent)
     end})
 
     tab:Divider()
-    tab:Toggle({Title = "Otomatis Jual Semua Ikan", Value = state.autoSellEnabled, Callback = function(s)
+    tab:Toggle({Title = "Sell All Inventory Full", Value = state.autoSellEnabled, Callback = function(s)
         state.autoSellEnabled = s
         notify("Auto Jual Semua Ikan", s and "Aktif." or "Nonaktif.")
         if s then task.spawn(autoSellLoop) end
     end})
-    
-    -- [TOMBOL BARU DITAMBAHKAN DI SINI]
+
+    tab:Button({Title = "Jual Semua Ikan", Callback = function()
+        pcall(function()
+            FISH_REMOTE:FireServer("SellAllFish")
+            notify("Operasi Manual", "Perintah untuk menjual semua ikan telah dikirim.")
+        end)
+    end})
+
     tab:Toggle({
         Title = "Otomatis Jual Sampah",
         Value = state.autoSellJunkEnabled,
@@ -462,7 +480,6 @@ local function createControlTab(parent)
             end
         end
     })
-    -- [AKHIR DARI KODE BARU]
 
     tab:Divider()
     tab:Toggle({Title = "Auto Quest (Theseus)", Value = state.autoQuestEnabled, Callback = function(s)
