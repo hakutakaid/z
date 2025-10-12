@@ -329,10 +329,14 @@ MainSection:Button({
 
 MainSection:Space()
 
+-- [PERBAIKAN DIMULAI DI SINI]
 local StatusSection = MainTab:Section({ Title = "Status" })
-local statusLabel = StatusSection:Paragraph({
+
+-- Menggunakan Input yang dikunci sebagai label status
+local statusLabel = StatusSection:Input({
 	Title = "State",
-	Desc = "Idle",
+	Value = "Idle",
+	Locked = true,
 })
 
 RunService.Heartbeat:Connect(function()
@@ -352,5 +356,7 @@ RunService.Heartbeat:Connect(function()
 	else
 		desc = "Idle"
 	end
-	statusLabel:Set({ Desc = desc })
+    -- Memanggil :Set() pada elemen Input, yang didukung
+	statusLabel:Set(desc)
 end)
+-- [PERBAIKAN SELESAI]
